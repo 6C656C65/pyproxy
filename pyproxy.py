@@ -156,67 +156,154 @@ def handle_client(
         client_socket.close()
         server_socket.close()
 
-def start_proxy(
-    host: str,
-    port: int,
-    debug: bool,
-    access_log: str,
-    block_log: str,
-    queue: multiprocessing.Queue,
-    result_queue: multiprocessing.Queue,
-    html_403: str,
-    no_filter: bool
-) -> None:
-    """
-    Starts the proxy server and listens for incoming client connections,
-    querying the filter process.
-    
-    Args:
-        host (str): The IP to listen on.
-        port (int): The port to listen on.
-        debug (bool): Enable debug logging.
-        access_log (str): Path to the access log file
-        block_log (str): Path to the block log file
-        queue (multiprocessing.Queue): A queue to send domain/URL for filtering.
-        result_queue (multiprocessing.Queue): A queue to get back result of filtering.
-        html_403 (str): Path to HTML page 403 Forbidden.
-        no_filter (bool): Disable URL and domain filtering.
-    """
-    console_logger = configure_console_logger()
-    if debug:
-        console_logger.setLevel(logging.DEBUG)
-    else:
-        console_logger.setLevel(logging.INFO)
+class ProxyServer:
+    def __init__(self, host, port, debug, access_log, block_log, html_403, no_filter, blocked_sites, blocked_url):
+        self.host = host
+        self.port = port
+        self.debug = debug
+        self.html_403 = html_403
+        self.no_filter = no_filter
+        self.filter_proc = None
+        self.queue = multiprocessing.Queue()
+        self.result_queue = multiprocessing.Queue()
+        self.console_logger = configure_console_logger()
+        self.access_logger = configure_file_logger(access_log, "AccessLogger")
+        self.block_logger = configure_file_logger(block_log, "BlockLogger")
+        self.config_blocked_sites = blocked_sites
+        self.config_blocked_url = blocked_url
 
-    access_logger = configure_file_logger(access_log, "AccessLogger")
-    block_logger = configure_file_logger(block_log, "BlockLogger")
+    def start(self):
+        if self.debug:
+            self.console_logger.setLevel(logging.DEBUG)
+        else:
+            self.console_logger.setLevel(logging.INFO)
 
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((host, port))
-    server.listen(10)
+        if not os.path.exists(self.config_blocked_sites):
+            with open(self.config_blocked_sites, "w", encoding='utf-8'):
+                pass
+        if not os.path.exists(self.config_blocked_url):
+            with open(self.config_blocked_url, "w", encoding='utf-8'):
+                pass
 
-    console_logger.info("Proxy server started on %s:%d...", host, port)
-
-    try:
-        while True:
-            client_socket, addr = server.accept()
-            console_logger.debug("Connection from %s", addr)
-            client_handler = threading.Thread(
-                target=handle_client,
-                args=(
-                    client_socket,
-                    queue,
-                    result_queue,
-                    console_logger,
-                    access_logger,
-                    block_logger,
-                    html_403,
-                    no_filter
-                )
+        if not self.no_filter:
+            self.filter_proc = multiprocessing.Process(
+                target=filter_process,
+                args=(self.queue, self.result_queue, self.config_blocked_sites, self.config_blocked_url)
             )
-            client_handler.start()
-    except KeyboardInterrupt:
-        console_logger.info("Proxy interrupted, shutting down.")
+            self.filter_proc.start()
+
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind((self.host, self.port))
+        server.listen(10)
+
+        self.console_logger.info(f"Proxy server started on {self.host}:{self.port}...")
+
+        try:
+            while True:
+                client_socket, addr = server.accept()
+                self.console_logger.debug(f"Connection from {addr}")
+                client_handler = threading.Thread(
+                    target=self.handle_client,
+                    args=(client_socket,)
+                )
+                client_handler.start()
+        except KeyboardInterrupt:
+            self.console_logger.info("Proxy interrupted, shutting down.")
+
+    def handle_client(self, client_socket):
+        request = client_socket.recv(4096)
+
+        if not request:
+            self.console_logger.debug("No request received, closing connection.")
+            client_socket.close()
+            return
+
+        first_line = request.decode(errors='ignore').split("\n")[0]
+
+        if first_line.startswith("CONNECT"):
+            self.handle_https_connection(client_socket, first_line)
+        else:
+            self.handle_http_request(client_socket, request)
+
+    def handle_http_request(self, client_socket, request):
+        first_line = request.decode(errors='ignore').split("\n")[0]
+        url = first_line.split(" ")[1]
+
+        if not self.no_filter:
+            self.queue.put(url)
+            result = self.result_queue.get()
+            if result[1] == "Blocked":
+                self.block_logger.info(f"{client_socket.getpeername()[0]} - {url} - {first_line}")
+                with open(self.html_403, "r", encoding='utf-8') as f:
+                    custom_403_page = f.read()
+                response = f"HTTP/1.1 403 Forbidden\r\nContent-Length: {len(custom_403_page)}\r\n\r\n{custom_403_page}"
+                client_socket.sendall(response.encode())
+                client_socket.close()
+                return
+
+        self.access_logger.info(f"{client_socket.getpeername()[0]} - {url} - {first_line}")
+        self.forward_request_to_server(client_socket, request, url)
+
+    def forward_request_to_server(self, client_socket, request, url):
+        server_host, server_port = self.parse_url(url)
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.connect((server_host, server_port))
+        server_socket.sendall(request)
+
+        while True:
+            response = server_socket.recv(4096)
+            if len(response) > 0:
+                client_socket.send(response)
+            else:
+                break
+
+    def parse_url(self, url):
+        http_pos = url.find("//")
+        if http_pos != -1:
+            url = url[(http_pos + 2):]
+        port_pos = url.find(":")
+        path_pos = url.find("/")
+        if path_pos == -1:
+            path_pos = len(url)
+
+        server_host = url[:path_pos] if port_pos == -1 or port_pos > path_pos else url[:port_pos]
+        server_port = 80 if port_pos == -1 or port_pos > path_pos else int(url[(port_pos + 1):path_pos])
+
+        return server_host, server_port
+
+    def handle_https_connection(self, client_socket, first_line):
+        target = first_line.split(" ")[1]
+        server_host, server_port = target.split(":")
+        server_port = int(server_port)
+
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.connect((server_host, server_port))
+
+        client_socket.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+
+        self.access_logger.info(f"{client_socket.getpeername()[0]} - {server_host} - {first_line}")
+
+        self.transfer_data_between_sockets(client_socket, server_socket)
+
+    def transfer_data_between_sockets(self, client_socket, server_socket):
+        sockets = [client_socket, server_socket]
+        try:
+            while True:
+                readable, _, _ = select.select(sockets, [], [], 1)
+                for sock in readable:
+                    data = sock.recv(4096)
+                    if len(data) == 0:
+                        self.console_logger.debug("Closing connection.")
+                        client_socket.close()
+                        server_socket.close()
+                        return
+                    if sock is client_socket:
+                        server_socket.sendall(data)
+                    else:
+                        client_socket.sendall(data)
+        except (socket.error, OSError) as e:
+            client_socket.close()
+            server_socket.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -248,30 +335,16 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if not os.path.exists("config/blocked_sites.txt"):
-        with open("config/blocked_sites.txt", "w", encoding='utf-8'):
-            pass
-    if not os.path.exists("config/blocked_url.txt"):
-        with open("config/blocked_url.txt", "w", encoding='utf-8'):
-            pass
-
-    if not args.no_filter:
-        queue = multiprocessing.Queue()
-        result_queue = multiprocessing.Queue()
-        filter_proc = multiprocessing.Process(
-            target=filter_process,
-            args=(queue, result_queue, "config/blocked_sites.txt", "config/blocked_url.txt")
-        )
-        filter_proc.start()
-
-    start_proxy(
-        args.host,
-        args.port,
-        args.debug,
-        args.access_log,
-        args.block_log,
-        queue,
-        result_queue,
-        args.html_403,
-        args.no_filter
+    proxy = ProxyServer(
+        host=args.host,
+        port=args.port,
+        debug=args.debug,
+        access_log=args.access_log,
+        block_log=args.block_log,
+        html_403=args.html_403,
+        no_filter=args.no_filter,
+        blocked_sites="config/blocked_sites.txt",
+        blocked_url="config/blocked_url.txt"
     )
+
+    proxy.start()
