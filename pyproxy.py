@@ -16,150 +16,19 @@ from rich_argparse import MetavarTypeRichHelpFormatter
 from utils.filter import filter_process
 from utils.logger import configure_file_logger, configure_console_logger
 
-def handle_client(
-    client_socket: socket.socket,
-    queue: multiprocessing.Queue,
-    result_queue: multiprocessing.Queue,
-    console_logger: logging.Logger,
-    access_logger: logging.Logger,
-    block_logger: logging.Logger,
-    html_403: str,
-    no_filter: bool
-) -> None:
-    """
-    Handles a client connection, processing HTTP and HTTPS requests.
-    
-    Args:
-        client_socket (socket.socket): The client socket.
-        queue (multiprocessing.Queue): A queue to send domain/URL for filtering.
-        result_queue (multiprocessing.Queue): A queue to receive
-                    the filtering result (blocked or allowed).
-        console_logger (logging.Logger): Logger to write in standard output.
-        access_logger (logging.Logger): Logger to write logs to the file.
-        block_logger (logging.Logger): Logger to write block logs to the file.
-        html_403 (str): Path to HTML page 403 Forbidden.
-        no_filter (bool): Disable URL and domain filtering.
-    """
-    request = client_socket.recv(4096)
-
-    if not request:
-        console_logger.debug("No request received, closing connection.")
-        client_socket.close()
-        return
-
-    try:
-        first_line = request.decode(errors='ignore').split("\n")[0]
-    except UnicodeDecodeError as e:
-        console_logger.error(f"Failed to decode request: {e}")
-        return
-
-    if first_line.startswith("CONNECT"):
-        try:
-            target = first_line.split(" ")[1]
-            server_host, server_port = target.split(":")
-            server_port = int(server_port)
-
-            server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            server_socket.connect((server_host, server_port))
-
-            client_socket.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
-
-            access_logger.info(f"{client_socket.getpeername()[0]} - {server_host} - {first_line}")
-
-            sockets = [client_socket, server_socket]
-            while True:
-                readable, _, _ = select.select(sockets, [], [], 1)
-                for sock in readable:
-                    data = sock.recv(4096)
-                    if len(data) == 0:
-                        console_logger.debug("Closing HTTPS tunnel.")
-                        client_socket.close()
-                        server_socket.close()
-                        return
-                    if sock is client_socket:
-                        server_socket.sendall(data)
-                    else:
-                        client_socket.sendall(data)
-        except (socket.error, OSError) as e:
-            console_logger.error(f"Socket error during HTTPS tunnel: {e}")
-        finally:
-            client_socket.close()
-            server_socket.close()
-        return
-
-    try:
-        url = first_line.split(" ")[1]
-    except IndexError as e:
-        console_logger.error(f"URL parsing failed: {e}. The first line may be malformed.")
-        client_socket.close()
-        return
-
-    if not no_filter:
-        try:
-            queue.put(url)
-            result = result_queue.get()
-            if result[1] == "Blocked":
-                block_logger.info(f"{client_socket.getpeername()[0]} - {url} - {first_line}")
-                with open(html_403, "r", encoding='utf-8') as f:
-                    custom_403_page = f.read()
-                response = (
-                    f"HTTP/1.1 403 Forbidden\r\n"
-                    f"Content-Length: {len(custom_403_page)}\r\n\r\n"
-                    f"{custom_403_page}"
-                )
-                client_socket.sendall(response.encode())
-                client_socket.close()
-                return
-        except queue.full as e:
-            console_logger.error(f"Queue is full: {e}")
-            client_socket.close()
-            return
-        except queue.empty as e:
-            console_logger.error(f"Result queue is empty: {e}")
-            client_socket.close()
-            return
-
-    http_pos = url.find("//")
-    if http_pos != -1:
-        url = url[(http_pos+2):]
-    port_pos = url.find(":")
-    path_pos = url.find("/")
-    if path_pos == -1:
-        path_pos = len(url)
-
-    server_host = ""
-    server_port = 80
-    if port_pos == -1 or port_pos > path_pos:
-        server_host = url[:path_pos]
-    else:
-        server_host = url[:port_pos]
-        server_port = int(url[(port_pos+1):path_pos])
-
-    try:
-        access_logger.info(f"{client_socket.getpeername()[0]} - {server_host} - {first_line}")
-
-        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_socket.connect((server_host, server_port))
-        server_socket.sendall(request)
-
-        while True:
-            response = server_socket.recv(4096)
-            if len(response) > 0:
-                client_socket.send(response)
-            else:
-                break
-    except socket.timeout as e:
-        console_logger.error(f"Connection timed out: {e}")
-    except socket.error as e:
-        console_logger.error(f"Socket error: {e}")
-    finally:
-        client_socket.close()
-        server_socket.close()
-
 class ProxyServer:
-    def __init__(self, host, port, debug, access_log, block_log, html_403, no_filter, blocked_sites, blocked_url):
-        self.host = host
-        self.port = port
+    """
+    A simple Python-based proxy server that handles HTTP and HTTPS requests. 
+    It forwards requests to the target server, filters URLs, and blocks access to 
+    certain sites based on a configured list.
+    The server logs access and blocked requests to specified log files.
+    """
+    def __init__(self, host, port, debug, access_log, block_log,
+                 html_403, no_filter, blocked_sites, blocked_url):
+        """
+        Initializes the ProxyServer instance with the provided configurations.
+        """
+        self.host_port = (host, port)
         self.debug = debug
         self.html_403 = html_403
         self.no_filter = no_filter
@@ -173,6 +42,11 @@ class ProxyServer:
         self.config_blocked_url = blocked_url
 
     def start(self):
+        """
+        Starts the proxy server, initializes the filtering process if enabled,
+        and begins listening for incoming client connections.
+        It creates a socket server and manages client threads.
+        """
         if self.debug:
             self.console_logger.setLevel(logging.DEBUG)
         else:
@@ -188,20 +62,25 @@ class ProxyServer:
         if not self.no_filter:
             self.filter_proc = multiprocessing.Process(
                 target=filter_process,
-                args=(self.queue, self.result_queue, self.config_blocked_sites, self.config_blocked_url)
+                args=(
+                    self.queue,
+                    self.result_queue,
+                    self.config_blocked_sites,
+                    self.config_blocked_url
+                )
             )
             self.filter_proc.start()
 
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.bind((self.host, self.port))
+        server.bind(self.host_port)
         server.listen(10)
 
-        self.console_logger.info(f"Proxy server started on {self.host}:{self.port}...")
+        self.console_logger.info("Proxy server started on %s...", self.host_port)
 
         try:
             while True:
                 client_socket, addr = server.accept()
-                self.console_logger.debug(f"Connection from {addr}")
+                self.console_logger.debug("Connection from %s", addr)
                 client_handler = threading.Thread(
                     target=self.handle_client,
                     args=(client_socket,)
@@ -211,6 +90,12 @@ class ProxyServer:
             self.console_logger.info("Proxy interrupted, shutting down.")
 
     def handle_client(self, client_socket):
+        """
+        Handles an incoming client connection by processing the request.
+        
+        Args:
+            client_socket (socket): The socket object for the client connection.
+        """
         request = client_socket.recv(4096)
 
         if not request:
@@ -226,6 +111,14 @@ class ProxyServer:
             self.handle_http_request(client_socket, request)
 
     def handle_http_request(self, client_socket, request):
+        """
+        Handles HTTP requests, checks if the URL is blocked,
+        and forwards the request to the target server.
+        
+        Args:
+            client_socket (socket): The socket object for the client connection.
+            request (bytes): The raw HTTP request sent by the client.
+        """
         first_line = request.decode(errors='ignore').split("\n")[0]
         url = first_line.split(" ")[1]
 
@@ -233,18 +126,36 @@ class ProxyServer:
             self.queue.put(url)
             result = self.result_queue.get()
             if result[1] == "Blocked":
-                self.block_logger.info(f"{client_socket.getpeername()[0]} - {url} - {first_line}")
+                self.block_logger.info(
+                    "%s - %s - %s",
+                    client_socket.getpeername()[0],
+                    url,
+                    first_line
+                )
                 with open(self.html_403, "r", encoding='utf-8') as f:
                     custom_403_page = f.read()
-                response = f"HTTP/1.1 403 Forbidden\r\nContent-Length: {len(custom_403_page)}\r\n\r\n{custom_403_page}"
+                response = (
+                    f"HTTP/1.1 403 Forbidden\r\n"
+                    f"Content-Length: {len(custom_403_page)}\r\n"
+                    f"\r\n"
+                    f"{custom_403_page}"
+                )
                 client_socket.sendall(response.encode())
                 client_socket.close()
                 return
 
-        self.access_logger.info(f"{client_socket.getpeername()[0]} - {url} - {first_line}")
+        self.access_logger.info("%s - %s - %s", client_socket.getpeername()[0], url, first_line)
         self.forward_request_to_server(client_socket, request, url)
 
     def forward_request_to_server(self, client_socket, request, url):
+        """
+        Forwards the HTTP request to the target server and sends the response back to the client.
+        
+        Args:
+            client_socket (socket): The socket object for the client connection.
+            request (bytes): The raw HTTP request sent by the client.
+            url (str): The target URL from the HTTP request.
+        """
         server_host, server_port = self.parse_url(url)
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.connect((server_host, server_port))
@@ -258,6 +169,15 @@ class ProxyServer:
                 break
 
     def parse_url(self, url):
+        """
+        Parses the URL to extract the host and port for connecting to the target server.
+        
+        Args:
+            url (str): The URL to be parsed.
+        
+        Returns:
+            tuple: The server host and port.
+        """
         http_pos = url.find("//")
         if http_pos != -1:
             url = url[(http_pos + 2):]
@@ -267,11 +187,22 @@ class ProxyServer:
             path_pos = len(url)
 
         server_host = url[:path_pos] if port_pos == -1 or port_pos > path_pos else url[:port_pos]
-        server_port = 80 if port_pos == -1 or port_pos > path_pos else int(url[(port_pos + 1):path_pos])
+        if port_pos == -1 or port_pos > path_pos:
+            server_port = 80
+        else:
+            server_port = int(url[(port_pos + 1):path_pos])
 
         return server_host, server_port
 
     def handle_https_connection(self, client_socket, first_line):
+        """
+        Handles HTTPS connections by establishing a connection with the target server 
+        and relaying data between the client and server.
+        
+        Args:
+            client_socket (socket): The socket object for the client connection.
+            first_line (str): The first line of the CONNECT request from the client.
+        """
         target = first_line.split(" ")[1]
         server_host, server_port = target.split(":")
         server_port = int(server_port)
@@ -281,11 +212,23 @@ class ProxyServer:
 
         client_socket.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
 
-        self.access_logger.info(f"{client_socket.getpeername()[0]} - {server_host} - {first_line}")
+        self.access_logger.info(
+            "%s - %s - %s",
+            client_socket.getpeername()[0],
+            server_host,
+            first_line
+        )
 
         self.transfer_data_between_sockets(client_socket, server_socket)
 
     def transfer_data_between_sockets(self, client_socket, server_socket):
+        """
+        Transfers data between the client socket and server socket.
+        
+        Args:
+            client_socket (socket): The socket object for the client connection.
+            server_socket (socket): The socket object for the server connection.
+        """
         sockets = [client_socket, server_socket]
         try:
             while True:
@@ -301,7 +244,7 @@ class ProxyServer:
                         server_socket.sendall(data)
                     else:
                         client_socket.sendall(data)
-        except (socket.error, OSError) as e:
+        except (socket.error, OSError):
             client_socket.close()
             server_socket.close()
 
