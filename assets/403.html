@@ -1,8 +1,52 @@
-<html>
-    <head><title>403 Forbidden</title></head>
-    <body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>403 Forbidden</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+        h1 {
+            color: #d9534f;
+            font-size: 48px;
+        }
+        p {
+            font-size: 18px;
+            color: #555;
+        }
+        img {
+            width: 100px; /* Adjust the size of the image */
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <img src="data:image/png;base64,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" alt="403 Image">
         <h1>403 Forbidden</h1>
         <p>You do not have permission to access this site.</p>
         <p>Blocked by PyProxy.</p>
-    </body>
+    </div>
+
+</body>
 </html>

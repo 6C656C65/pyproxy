@@ -20,7 +20,7 @@ def configure_console_logger() -> logging.Logger:
         logging.Logger: A logger instance that writes logs to the console.
     """
     console_logger = logging.getLogger("ConsoleLogger")
-    console_logger.setLevel(logging.DEBUG)
+    console_logger.setLevel(logging.INFO)
     console_formatter = logging.Formatter('%(asctime)s - %(message)s', datefmt='%d/%m/%Y %H:%M:%S')
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(console_formatter)

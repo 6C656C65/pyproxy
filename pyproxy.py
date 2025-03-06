@@ -7,12 +7,11 @@ to those URLs. The proxy can handle both HTTP and HTTPS requests, and logs acces
 import socket
 import select
 import threading
-from datetime import datetime
 import argparse
-from rich_argparse import MetavarTypeRichHelpFormatter
 import logging
 import multiprocessing
 import os
+from rich_argparse import MetavarTypeRichHelpFormatter
 
 from utils.filter import filter_process
 from utils.logger import configure_file_logger, configure_console_logger
@@ -44,15 +43,14 @@ def handle_client(
     request = client_socket.recv(4096)
 
     if not request:
-        console_logger.debug(f"No request received, closing connection.")
+        console_logger.debug("No request received, closing connection.")
         client_socket.close()
         return
 
     try:
-        first_line = request.decode().split("\n")[0]
-    except Exception as e:
-        console_logger.error(f"Failed to parse request: {e}")
-        client_socket.close()
+        first_line = request.decode(errors='ignore').split("\n")[0]
+    except UnicodeDecodeError as e:
+        console_logger.error(f"Failed to decode request: {e}")
         return
 
     if first_line.startswith("CONNECT"):
@@ -74,7 +72,7 @@ def handle_client(
                 for sock in readable:
                     data = sock.recv(4096)
                     if len(data) == 0:
-                        console_logger.debug(f"Closing HTTPS tunnel.")
+                        console_logger.debug("Closing HTTPS tunnel.")
                         client_socket.close()
                         server_socket.close()
                         return
@@ -82,8 +80,8 @@ def handle_client(
                         server_socket.sendall(data)
                     else:
                         client_socket.sendall(data)
-        except Exception as e:
-            console_logger.error(f"HTTPS tunnel error: {e}")
+        except (socket.error, OSError) as e:
+            console_logger.error(f"Socket error during HTTPS tunnel: {e}")
         finally:
             client_socket.close()
             server_socket.close()
@@ -91,8 +89,8 @@ def handle_client(
 
     try:
         url = first_line.split(" ")[1]
-    except Exception as e:
-        console_logger.error(f"URL parsing failed: {e}")
+    except IndexError as e:
+        console_logger.error(f"URL parsing failed: {e}. The first line may be malformed.")
         client_socket.close()
         return
 
@@ -102,7 +100,7 @@ def handle_client(
             result = result_queue.get()
             if result[1] == "Blocked":
                 block_logger.info(f"{client_socket.getpeername()[0]} - {url} - {first_line}")
-                with open(html_403, "r") as f:
+                with open(html_403, "r", encoding='utf-8') as f:
                     custom_403_page = f.read()
                 response = (
                     f"HTTP/1.1 403 Forbidden\r\n"
@@ -112,8 +110,12 @@ def handle_client(
                 client_socket.sendall(response.encode())
                 client_socket.close()
                 return
-        except Exception as e:
-            console_logger.error(f"Filtering domain failed: {e}")
+        except queue.full as e:
+            console_logger.error(f"Queue is full: {e}")
+            client_socket.close()
+            return
+        except queue.empty as e:
+            console_logger.error(f"Result queue is empty: {e}")
             client_socket.close()
             return
 
@@ -146,8 +148,10 @@ def handle_client(
                 client_socket.send(response)
             else:
                 break
-    except Exception as e:
-        console_logger.error(f"Connection error: {e}")
+    except socket.timeout as e:
+        console_logger.error(f"Connection timed out: {e}")
+    except socket.error as e:
+        console_logger.error(f"Socket error: {e}")
     finally:
         client_socket.close()
         server_socket.close()
@@ -191,12 +195,12 @@ def start_proxy(
     server.bind((host, port))
     server.listen(10)
 
-    console_logger.info(f"Proxy server started on {host}:{port}...")
+    console_logger.info("Proxy server started on %s:%d...", host, port)
 
     try:
         while True:
             client_socket, addr = server.accept()
-            console_logger.debug(f"Connection from {addr}")
+            console_logger.debug("Connection from %s", addr)
             client_handler = threading.Thread(
                 target=handle_client,
                 args=(
@@ -215,7 +219,10 @@ def start_proxy(
         console_logger.info("Proxy interrupted, shutting down.")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Lightweight and fast python web proxy", formatter_class=MetavarTypeRichHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description="Lightweight and fast python web proxy",
+        formatter_class=MetavarTypeRichHelpFormatter
+    )
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     parser.add_argument("-H", "--host", type=str, default="0.0.0.0", help="IP to listen on")
     parser.add_argument("-P", "--port", type=int, default=8080, help="Port to listen on")
@@ -231,15 +238,22 @@ if __name__ == "__main__":
         default="logs/block.log",
         help="Path to the block log file"
     )
-    parser.add_argument("--html-403", type=str, default="assets/403.html", help="403 Forbidden HTML page")
+    parser.add_argument(
+        "--html-403",
+        type=str,
+        default="assets/403.html",
+        help="403 Forbidden HTML page"
+    )
     parser.add_argument("--no-filter", action="store_true", help="Disable URL and domain filtering")
 
     args = parser.parse_args()
 
     if not os.path.exists("config/blocked_sites.txt"):
-        open("config/blocked_sites.txt", "w").close()
+        with open("config/blocked_sites.txt", "w", encoding='utf-8'):
+            pass
     if not os.path.exists("config/blocked_url.txt"):
-        open("config/blocked_url.txt", "w").close()
+        with open("config/blocked_url.txt", "w", encoding='utf-8'):
+            pass
 
     if not args.no_filter:
         queue = multiprocessing.Queue()
