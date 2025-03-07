@@ -32,11 +32,14 @@ jobs:
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "Docker tag version: $VERSION"
 
+      - name: Convert repository owner to lowercase
+        run: echo "REPO_OWNER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Build Docker image
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/pyproxy:${{ env.VERSION }} -t ghcr.io/${{ github.repository_owner }}/pyproxy:latest .
+          docker build -t ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }} -t ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest .
 
       - name: Push Docker image
         run: |
-          docker push ghcr.io/${{ github.repository_owner }}/pyproxy:${{ env.VERSION }}
-          docker push ghcr.io/${{ github.repository_owner }}/pyproxy:latest
+          docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}
+          docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest
