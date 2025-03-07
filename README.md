@@ -49,10 +49,9 @@ python3 pyproxy.py -v
 
 ## 🔧 **To do**
 
-- Documentation (typing, docstring, user doc)
+- Documentation
 - Support Inspection SSL
 - Support content analysis
-- Support HTTPS blacklist / whitelist for domain and URL
 - Support distant blacklist / whitelist
 - Caching of latest and most searched pages
 - Adding ACL

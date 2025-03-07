@@ -2,28 +2,18 @@
 proxy.py
 
 This module implements a simple Python-based proxy server that handles both HTTP and HTTPS requests.
-It forwards requests to the target server, checks URLs against a blocklist, and serves custom 403 pages for blocked sites.
-The server also logs access and blocked requests to specified log files.
+It forwards requests to the target server, checks URLs against a blocklist,
+and serves custom 403 pages for blocked sites. The server also logs access and blocked 
+requests to specified log files.
 
 Classes:
-- ProxyServer: A class that defines the proxy server. It listens for incoming connections, processes requests, forwards them to the target server, and logs events.
-
-Methods:
-- __init__: Initializes the ProxyServer instance with the provided configuration settings.
-- start: Starts the proxy server, listens for incoming client connections, and manages client handling.
-- handle_client: Handles an incoming client request, determines if it's HTTP or HTTPS, and processes it accordingly.
-- handle_http_request: Handles HTTP requests, checks if the URL is blocked, and forwards the request to the target server.
-- forward_request_to_server: Forwards the HTTP request to the target server and sends the response back to the client.
-- parse_url: Parses the requested URL to extract the target server's host and port.
-- handle_https_connection: Handles HTTPS connections, establishing a secure connection with the target server and relaying data.
-- transfer_data_between_sockets: Transfers data between the client and target server via sockets.
+- ProxyServer: A class that defines the proxy server. It listens for incoming connections,
+processes requests, forwards them to the target server, and logs events.
 """
-
 
 import socket
 import select
 import threading
-import argparse
 import logging
 import multiprocessing
 import os
