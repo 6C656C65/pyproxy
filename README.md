@@ -26,6 +26,12 @@ git clone https://github.com/6C656C65/pyproxy.git
 pip install -r requirements.txt
 ```
 
+### Install with Docker
+```bash
+docker pull ghcr.io/6C656C65/pyproxy:latest
+docker run -d ghcr.io/6C656C65/pyproxy:latest
+```
+
 ## 🚀 **Usage**
 
 ### Start the proxy
@@ -45,14 +51,15 @@ python3 pyproxy.py -v
 
 - Pylint for formatting
 - Unittest
-- Install with service and docker
 - Documentation (typing, docstring, user doc)
 - Support Inspection SSL
 - Support content analysis
 - Support HTTPS blacklist / whitelist for domain and URL
-- Support distant blakclist / whitelist
+- Support distant blacklist / whitelist
 - Caching of latest and most searched pages
 - Adding ACL
 - Proxy authentication
+- Benchmark
+- Admin mode, statistiques and real time request
 
 ---
