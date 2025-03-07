@@ -50,7 +50,11 @@ class TestFilter(unittest.TestCase):
         queue = multiprocessing.Queue()
         result_queue = multiprocessing.Queue()
 
-        with patch("builtins.open", new_callable=mock_open, read_data="blocked.com\nallowed.com/blocked"):
+        with patch(
+            "builtins.open",
+            new_callable=mock_open,
+            read_data="blocked.com\nallowed.com/blocked"
+        ):
             process = multiprocessing.Process(
                 target=filter_process,
                 args=(queue, result_queue, "blocked_sites.txt", "blocked_urls.txt")
