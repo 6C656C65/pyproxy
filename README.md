@@ -49,8 +49,6 @@ python3 pyproxy.py -v
 
 ## 🔧 **To do**
 
-- Pylint for formatting
-- Unittest
 - Documentation (typing, docstring, user doc)
 - Support Inspection SSL
 - Support content analysis

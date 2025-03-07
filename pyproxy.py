@@ -15,6 +15,7 @@ from rich_argparse import MetavarTypeRichHelpFormatter
 
 from utils.filter import filter_process
 from utils.logger import configure_file_logger, configure_console_logger
+from utils.version import __version__
 
 class ProxyServer:
     """
@@ -250,9 +251,10 @@ class ProxyServer:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Lightweight and fast python web proxy",
+        description=f"Lightweight and fast python web proxy",
         formatter_class=MetavarTypeRichHelpFormatter
     )
+    parser.add_argument("-v", "--version", action='version', version=__version__)
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     parser.add_argument("-H", "--host", type=str, default="0.0.0.0", help="IP to listen on")
     parser.add_argument("-P", "--port", type=int, default=8080, help="Port to listen on")
