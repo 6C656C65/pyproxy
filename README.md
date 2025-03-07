@@ -28,8 +28,8 @@ pip install -r requirements.txt
 
 ### Install with Docker
 ```bash
-docker pull ghcr.io/6C656C65/pyproxy:latest
-docker run -d ghcr.io/6C656C65/pyproxy:latest
+docker pull ghcr.io/6c656c65/pyproxy:latest
+docker run -d ghcr.io/6c656c65/pyproxy:latest
 ```
 
 ## 🚀 **Usage**
