@@ -17,8 +17,8 @@ import threading
 import logging
 import multiprocessing
 import os
-from OpenSSL import crypto
 import ssl
+from OpenSSL import crypto
 
 from utils.filter import filter_process
 from utils.logger import configure_file_logger, configure_console_logger
@@ -31,7 +31,8 @@ class ProxyServer:
     The server logs access and blocked requests to specified log files.
     """
     def __init__(self, host, port, debug, access_log, block_log,
-                 html_403, no_filter, ssl_inspect, blocked_sites, blocked_url):
+                 html_403, no_filter, no_logging_access, no_logging_block, ssl_inspect,
+                 blocked_sites, blocked_url):
         """
         Initializes the ProxyServer instance with the provided configurations.
         """
@@ -39,17 +40,21 @@ class ProxyServer:
         self.debug = debug
         self.html_403 = html_403
         self.no_filter = no_filter
+        self.no_logging_access = no_logging_access
+        self.no_logging_block = no_logging_block
         self.ssl_inspect = ssl_inspect
         self.filter_proc = None
         self.queue = multiprocessing.Queue()
         self.result_queue = multiprocessing.Queue()
         self.console_logger = configure_console_logger()
-        self.access_logger = configure_file_logger(access_log, "AccessLogger")
-        self.block_logger = configure_file_logger(block_log, "BlockLogger")
         self.config_blocked_sites = blocked_sites
         self.config_blocked_url = blocked_url
         self.config_inspect_cert = "./certs/ca/cert.pem"
         self.config_inspect_key = "./certs/ca/key.pem"
+        if not self.no_logging_access:
+            self.access_logger = configure_file_logger(access_log, "AccessLogger")
+        if not self.no_logging_block:
+            self.block_logger = configure_file_logger(block_log, "BlockLogger")
 
     def start(self):
         """
@@ -136,12 +141,13 @@ class ProxyServer:
             self.queue.put(url)
             result = self.result_queue.get()
             if result[1] == "Blocked":
-                self.block_logger.info(
-                    "%s - %s - %s",
-                    client_socket.getpeername()[0],
-                    url,
-                    first_line
-                )
+                if not self.no_logging_block:
+                    self.block_logger.info(
+                        "%s - %s - %s",
+                        client_socket.getpeername()[0],
+                        url,
+                        first_line
+                    )
                 with open(self.html_403, "r", encoding='utf-8') as f:
                     custom_403_page = f.read()
                 response = (
@@ -153,8 +159,14 @@ class ProxyServer:
                 client_socket.sendall(response.encode())
                 client_socket.close()
                 return
-        server_host, server_port = self.parse_url(url)
-        self.access_logger.info("%s - %s - %s", client_socket.getpeername()[0], f"http://{server_host}", first_line)
+        server_host, _ = self.parse_url(url)
+        if not self.no_logging_access:
+            self.access_logger.info(
+                "%s - %s - %s",
+                client_socket.getpeername()[0],
+                f"http://{server_host}",
+                first_line
+            )
         self.forward_request_to_server(client_socket, request, url)
 
     def forward_request_to_server(self, client_socket, request, url):
@@ -204,6 +216,7 @@ class ProxyServer:
 
         return server_host, server_port
 
+    # pylint: disable=too-many-locals,too-many-statements
     def handle_https_connection(self, client_socket, first_line):
         """
         Handles HTTPS connections by establishing a connection with the target server 
@@ -221,12 +234,13 @@ class ProxyServer:
             self.queue.put(target)
             result = self.result_queue.get()
             if result[1] == "Blocked":
-                self.block_logger.info(
-                    "%s - %s - %s",
-                    client_socket.getpeername()[0],
-                    target,
-                    first_line
-                )
+                if not self.no_logging_block:
+                    self.block_logger.info(
+                        "%s - %s - %s",
+                        client_socket.getpeername()[0],
+                        target,
+                        first_line
+                    )
                 with open(self.html_403, "r", encoding='utf-8') as f:
                     custom_403_page = f.read()
                 response = (
@@ -243,20 +257,31 @@ class ProxyServer:
             cert_path, key_path = self.generate_certificate(server_host)
             client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
             client_context.load_cert_chain(certfile=cert_path, keyfile=key_path)
-            client_context.options |= ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
+            client_context.options |= (
+                ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 |
+                ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
+            )
             client_context.load_verify_locations(self.config_inspect_cert)
 
             try:
                 client_socket.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
-                ssl_client_socket = client_context.wrap_socket(client_socket, server_side=True, do_handshake_on_connect=False)
+                ssl_client_socket = client_context.wrap_socket(
+                    client_socket,
+                    server_side=True,
+                    do_handshake_on_connect=False
+                )
                 ssl_client_socket.do_handshake()
 
                 server_socket = socket.create_connection((server_host, server_port))
-                
+
                 server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
                 server_context.load_default_certs()
 
-                ssl_server_socket = server_context.wrap_socket(server_socket, server_hostname=server_host, do_handshake_on_connect=True)
+                ssl_server_socket = server_context.wrap_socket(
+                    server_socket,
+                    server_hostname=server_host,
+                    do_handshake_on_connect=True
+                )
 
                 try:
                     first_request = ssl_client_socket.recv(4096).decode(errors="ignore")
@@ -265,31 +290,45 @@ class ProxyServer:
 
                     full_url = f"https://{server_host}{path}"
 
-                    self.access_logger.info(
-                        "%s - %s - %s %s",
-                        ssl_client_socket.getpeername()[0],
-                        f"https://{server_host}",
-                        method,
-                        full_url
-                    )
+                    if not self.no_logging_access:
+                        self.access_logger.info(
+                            "%s - %s - %s %s",
+                            ssl_client_socket.getpeername()[0],
+                            f"https://{server_host}",
+                            method,
+                            full_url
+                        )
 
                     ssl_server_socket.sendall(first_request.encode())
 
-                except Exception as e:
-                    self.console_logger.error("Erreur lors de la lecture de la requête : %s", str(e))
+                except ValueError:
+                    self.console_logger.error(
+                        "Error parsing request: malformed request line."
+                    )
+
+                except (socket.error, ssl.SSLError) as e:
+                    self.console_logger.error("Network or SSL error : %s", str(e))
 
                 self.transfer_data_between_sockets(ssl_client_socket, ssl_server_socket)
 
-            except Exception as e:
-                import traceback
-                self.console_logger.error("Erreur SSL: %s", traceback.format_exc())
+            except ssl.SSLError as e:
+                self.console_logger.error("SSL error: %s", str(e))
+            except socket.error as e:
+                self.console_logger.error("Socket error: %s", str(e))
+            finally:
                 client_socket.close()
 
         else:
             server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             server_socket.connect((server_host, server_port))
             client_socket.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
-            self.access_logger.info("%s - %s - %s", client_socket.getpeername()[0], f"https://{server_host}", first_line)
+            if not self.no_logging_access:
+                self.access_logger.info(
+                    "%s - %s - %s",
+                    client_socket.getpeername()[0],
+                    f"https://{server_host}",
+                    first_line
+                )
             self.transfer_data_between_sockets(client_socket, server_socket)
 
     def transfer_data_between_sockets(self, client_socket, server_socket):
@@ -336,9 +375,9 @@ class ProxyServer:
             key = crypto.PKey()
             key.generate_key(crypto.TYPE_RSA, 2048)
 
-            with open(self.config_inspect_cert, "r") as f:
+            with open(self.config_inspect_cert, "r", encoding='utf-8') as f:
                 ca_cert = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
-            with open(self.config_inspect_key, "r") as f:
+            with open(self.config_inspect_key, "r", encoding='utf-8') as f:
                 ca_key = crypto.load_privatekey(crypto.FILETYPE_PEM, f.read())
 
             cert = crypto.X509()

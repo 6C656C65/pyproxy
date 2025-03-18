@@ -44,6 +44,8 @@ if __name__ == "__main__":
         help="Path to the custom 403 Forbidden HTML page"
     )
     parser.add_argument("--no-filter", action="store_true", help="Disable URL and domain filtering")
+    parser.add_argument("--no-logging-access", action="store_true", help="Disable access logging")
+    parser.add_argument("--no-logging-block", action="store_true", help="Disable block logging")
     parser.add_argument("--ssl-inspect", action="store_true", help="Enable SSL inspection")
 
     args = parser.parse_args()
@@ -56,6 +58,8 @@ if __name__ == "__main__":
         block_log=args.block_log,
         html_403=args.html_403,
         no_filter=args.no_filter,
+        no_logging_access=args.no_logging_access,
+        no_logging_block=args.no_logging_block,
         ssl_inspect=args.ssl_inspect,
         blocked_sites="config/blocked_sites.txt",
         blocked_url="config/blocked_url.txt"

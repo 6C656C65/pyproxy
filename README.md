@@ -63,7 +63,6 @@ python3 pyproxy.py --debug
 - Admin mode, statistiques and real time request
 - Shortcut
 - Config from file
-- Mode no logging
 - Custom header
 
 ---
