@@ -176,3 +176,4 @@ config/*.txt
 # Certs folder
 certs/*.key
 certs/*.pem
+certs/ca/*.pem
