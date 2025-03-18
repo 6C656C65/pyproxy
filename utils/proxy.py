@@ -32,7 +32,7 @@ class ProxyServer:
     """
     def __init__(self, host, port, debug, access_log, block_log,
                  html_403, no_filter, no_logging_access, no_logging_block, ssl_inspect,
-                 blocked_sites, blocked_url):
+                 blocked_sites, blocked_url, inspect_ca_cert, inspect_ca_key):
         """
         Initializes the ProxyServer instance with the provided configurations.
         """
@@ -49,8 +49,8 @@ class ProxyServer:
         self.console_logger = configure_console_logger()
         self.config_blocked_sites = blocked_sites
         self.config_blocked_url = blocked_url
-        self.config_inspect_cert = "./certs/ca/cert.pem"
-        self.config_inspect_key = "./certs/ca/key.pem"
+        self.config_inspect_cert = inspect_ca_cert
+        self.config_inspect_key = inspect_ca_key
         if not self.no_logging_access:
             self.access_logger = configure_file_logger(access_log, "AccessLogger")
         if not self.no_logging_block:
@@ -64,6 +64,18 @@ class ProxyServer:
         """
         if self.debug:
             self.console_logger.setLevel(logging.DEBUG)
+            self.console_logger.debug("Configuration used :")
+            self.console_logger.debug("[*] Host, Port = %s", self.host_port)
+            self.console_logger.debug("[*] debug = %s", self.debug)
+            self.console_logger.debug("[*] html_403 = %s", self.html_403)
+            self.console_logger.debug("[*] no_filter = %s", self.no_filter)
+            self.console_logger.debug("[*] no_logging_access = %s", self.no_logging_access)
+            self.console_logger.debug("[*] no_logging_block = %s", self.no_logging_block)
+            self.console_logger.debug("[*] ssl_inspect = %s", self.ssl_inspect)
+            self.console_logger.debug("[*] blocked_sites = %s", self.config_blocked_sites)
+            self.console_logger.debug("[*] blocked_url = %s", self.config_blocked_url)
+            self.console_logger.debug("[*] inspect_ca_cert = %s", self.config_inspect_cert)
+            self.console_logger.debug("[*] inspect_ca_key = %s", self.config_inspect_key)
         else:
             self.console_logger.setLevel(logging.INFO)
 

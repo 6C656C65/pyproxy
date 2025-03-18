@@ -36,6 +36,13 @@ docker run -d ghcr.io/6c656c65/pyproxy:latest
 
 ## 🚀 **Usage**
 
+### Generate CA
+If we want to generate a self-signed certificate authority, you can use the following OpenSSL command:
+```bash
+openssl req -x509 -newkey rsa:4096 -keyout certs/ca/key.pem -out certs/ca/cert.pem -days 365 -nodes
+```
+Otherwise, upload your CA certificate `./certs/ca/cert.pem` and associated key `./certs/ca/key.pem`.
+
 ### Start the proxy
 ```bash
 python3 pyproxy.py
@@ -62,7 +69,6 @@ python3 pyproxy.py --debug
 - Benchmark
 - Admin mode, statistiques and real time request
 - Shortcut
-- Config from file
 - Custom header
 
 ---

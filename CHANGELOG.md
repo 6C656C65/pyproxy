@@ -1,3 +1,8 @@
+## [0.2.5] - 2025-03-18
+### Added
+- Mode no logging
+- Config from file
+
 ## [0.2.4] - 2025-03-17
 ### Added
 - Inspection SSL
