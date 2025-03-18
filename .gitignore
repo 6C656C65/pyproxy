@@ -172,3 +172,7 @@ cython_debug/
 
 # Config file
 config/*.txt
+
+# Certs folder
+certs/*.key
+certs/*.pem

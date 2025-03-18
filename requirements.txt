@@ -1,1 +1,2 @@
 rich-argparse>=1.7.0
+pyOpenSSL>=25.0.0

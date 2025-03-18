@@ -16,6 +16,8 @@
 - Support HTTP & HTTPS
 - Logging web requests
 - HTTP : Domains and URLs blacklist
+- HTTPS : Domains blakclist
+- Inspection SSL
 - Custom page for 403 Forbidden
 
 ## 📦 **Installation**
@@ -39,18 +41,19 @@ docker run -d ghcr.io/6c656c65/pyproxy:latest
 python3 pyproxy.py
 ```
 The proxy will be available at: `0.0.0.0:8080`.
-The access log will be available at `./access.log`.
+The access log will be available at `./logs/access.log`.
 
 ### Debug Mode
-To run the proxy in verbose mode for debugging, use the `-v` option:
+To run the proxy in debug mode, use the `--debug` option:
 ```bash
-python3 pyproxy.py -v
+python3 pyproxy.py --debug
 ```
 
 ## 🔧 **To do**
 
 - Documentation
-- Support Inspection SSL
+- Support HTTPS Filtering URLs
+- Cancel inspection on bank site
 - Support content analysis
 - Support distant blacklist / whitelist
 - Caching of latest and most searched pages
@@ -58,5 +61,9 @@ python3 pyproxy.py -v
 - Proxy authentication
 - Benchmark
 - Admin mode, statistiques and real time request
+- Shortcut
+- Config from file
+- Mode no logging
+- Custom header
 
 ---

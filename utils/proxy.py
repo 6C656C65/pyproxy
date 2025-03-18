@@ -17,6 +17,8 @@ import threading
 import logging
 import multiprocessing
 import os
+from OpenSSL import crypto
+import ssl
 
 from utils.filter import filter_process
 from utils.logger import configure_file_logger, configure_console_logger
@@ -29,7 +31,7 @@ class ProxyServer:
     The server logs access and blocked requests to specified log files.
     """
     def __init__(self, host, port, debug, access_log, block_log,
-                 html_403, no_filter, blocked_sites, blocked_url):
+                 html_403, no_filter, ssl_inspect, blocked_sites, blocked_url):
         """
         Initializes the ProxyServer instance with the provided configurations.
         """
@@ -37,6 +39,7 @@ class ProxyServer:
         self.debug = debug
         self.html_403 = html_403
         self.no_filter = no_filter
+        self.ssl_inspect = ssl_inspect
         self.filter_proc = None
         self.queue = multiprocessing.Queue()
         self.result_queue = multiprocessing.Queue()
@@ -45,6 +48,8 @@ class ProxyServer:
         self.block_logger = configure_file_logger(block_log, "BlockLogger")
         self.config_blocked_sites = blocked_sites
         self.config_blocked_url = blocked_url
+        self.config_inspect_cert = "./certs/ca/cert.pem"
+        self.config_inspect_key = "./certs/ca/key.pem"
 
     def start(self):
         """
@@ -148,8 +153,8 @@ class ProxyServer:
                 client_socket.sendall(response.encode())
                 client_socket.close()
                 return
-
-        self.access_logger.info("%s - %s - %s", client_socket.getpeername()[0], url, first_line)
+        server_host, server_port = self.parse_url(url)
+        self.access_logger.info("%s - %s - %s", client_socket.getpeername()[0], f"http://{server_host}", first_line)
         self.forward_request_to_server(client_socket, request, url)
 
     def forward_request_to_server(self, client_socket, request, url):
@@ -234,19 +239,58 @@ class ProxyServer:
                 client_socket.close()
                 return
 
-        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_socket.connect((server_host, server_port))
+        if self.ssl_inspect:
+            cert_path, key_path = self.generate_certificate(server_host)
+            client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            client_context.load_cert_chain(certfile=cert_path, keyfile=key_path)
+            client_context.options |= ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
+            client_context.load_verify_locations(self.config_inspect_cert)
 
-        client_socket.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+            try:
+                client_socket.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+                ssl_client_socket = client_context.wrap_socket(client_socket, server_side=True, do_handshake_on_connect=False)
+                ssl_client_socket.do_handshake()
 
-        self.access_logger.info(
-            "%s - %s - %s",
-            client_socket.getpeername()[0],
-            server_host,
-            first_line
-        )
+                server_socket = socket.create_connection((server_host, server_port))
+                
+                server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+                server_context.load_default_certs()
 
-        self.transfer_data_between_sockets(client_socket, server_socket)
+                ssl_server_socket = server_context.wrap_socket(server_socket, server_hostname=server_host, do_handshake_on_connect=True)
+
+                try:
+                    first_request = ssl_client_socket.recv(4096).decode(errors="ignore")
+                    request_line = first_request.split("\r\n")[0]
+                    method, path, _ = request_line.split(" ")
+
+                    full_url = f"https://{server_host}{path}"
+
+                    self.access_logger.info(
+                        "%s - %s - %s %s",
+                        ssl_client_socket.getpeername()[0],
+                        f"https://{server_host}",
+                        method,
+                        full_url
+                    )
+
+                    ssl_server_socket.sendall(first_request.encode())
+
+                except Exception as e:
+                    self.console_logger.error("Erreur lors de la lecture de la requête : %s", str(e))
+
+                self.transfer_data_between_sockets(ssl_client_socket, ssl_server_socket)
+
+            except Exception as e:
+                import traceback
+                self.console_logger.error("Erreur SSL: %s", traceback.format_exc())
+                client_socket.close()
+
+        else:
+            server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            server_socket.connect((server_host, server_port))
+            client_socket.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+            self.access_logger.info("%s - %s - %s", client_socket.getpeername()[0], f"https://{server_host}", first_line)
+            self.transfer_data_between_sockets(client_socket, server_socket)
 
     def transfer_data_between_sockets(self, client_socket, server_socket):
         """
@@ -274,3 +318,41 @@ class ProxyServer:
         except (socket.error, OSError):
             client_socket.close()
             server_socket.close()
+
+    def generate_certificate(self, domain):
+        """
+        Generates a self-signed SSL certificate for the given domain.
+
+        Args:
+            domain (str): The domain name for which the certificate is generated.
+
+        Returns:
+            tuple: Paths to the generated certificate and private key files.
+        """
+        cert_path = f"./certs/{domain}.pem"
+        key_path = f"./certs/{domain}.key"
+
+        if not os.path.exists(cert_path):
+            key = crypto.PKey()
+            key.generate_key(crypto.TYPE_RSA, 2048)
+
+            with open(self.config_inspect_cert, "r") as f:
+                ca_cert = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
+            with open(self.config_inspect_key, "r") as f:
+                ca_key = crypto.load_privatekey(crypto.FILETYPE_PEM, f.read())
+
+            cert = crypto.X509()
+            cert.set_serial_number(int.from_bytes(os.urandom(16), 'big'))
+            cert.get_subject().CN = domain
+            cert.gmtime_adj_notBefore(0)
+            cert.gmtime_adj_notAfter(365 * 24 * 60 * 60)
+            cert.set_issuer(ca_cert.get_subject())
+            cert.set_pubkey(key)
+            cert.sign(ca_key, 'sha256')
+
+            with open(cert_path, "wb") as f:
+                f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
+            with open(key_path, "wb") as f:
+                f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
+
+        return cert_path, key_path
