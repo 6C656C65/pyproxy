@@ -61,7 +61,7 @@ class TestFilter(unittest.TestCase):
         ):
             process = multiprocessing.Process(
                 target=filter_process,
-                args=(queue, result_queue, "blocked_sites.txt", "blocked_urls.txt")
+                args=(queue, result_queue, "local", "blocked_sites.txt", "blocked_urls.txt")
             )
             process.start()
 
