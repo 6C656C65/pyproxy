@@ -85,17 +85,21 @@ class ProxyServer:
         else:
             self.console_logger.setLevel(logging.INFO)
 
-        for file in os.listdir(self.config_inspect_certs_folder):
-            if file.endswith(".key") or file.endswith(".pem"):
-                file_path = os.path.join(self.config_inspect_certs_folder, file)
-                try:
-                    os.remove(file_path)
-                except FileNotFoundError:
-                    self.console_logger.debug("File not found: %s", file_path)
-                except PermissionError:
-                    self.console_logger.debug("Permission denied: %s", file_path)
-                except OSError as e:
-                    self.console_logger.debug("OS error deleting %s: %s", file_path, e)
+        if not os.path.exists(self.config_inspect_certs_folder):
+            if self.ssl_inspect:
+                os.makedirs(self.config_inspect_certs_folder)
+        else:
+            for file in os.listdir(self.config_inspect_certs_folder):
+                if file.endswith(".key") or file.endswith(".pem"):
+                    file_path = os.path.join(self.config_inspect_certs_folder, file)
+                    try:
+                        os.remove(file_path)
+                    except FileNotFoundError:
+                        self.console_logger.debug("File not found: %s", file_path)
+                    except PermissionError:
+                        self.console_logger.debug("Permission denied: %s", file_path)
+                    except OSError as e:
+                        self.console_logger.debug("OS error deleting %s: %s", file_path, e)
 
         if not os.path.exists(self.config_blocked_sites):
             with open(self.config_blocked_sites, "w", encoding='utf-8'):
