@@ -33,6 +33,7 @@
 - HTTPS : Domains and URLs blakclist
 - Inspection SSL
 - Custom page for 403 Forbidden
+- Support distant (http) blacklist
 
 ## 📦 **Installation**
 
@@ -78,7 +79,6 @@ If you encounter any problems, or if you want to use the program in a particular
 
 - Cancel inspection on bank site
 - Support content analysis
-- Support distant blacklist / whitelist
 - Caching of latest and most searched pages
 - Adding ACL
 - Proxy authentication
