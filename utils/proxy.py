@@ -30,9 +30,10 @@ class ProxyServer:
     certain sites based on a configured list.
     The server logs access and blocked requests to specified log files.
     """
+    # pylint: disable=too-many-locals
     def __init__(self, host, port, debug, access_log, block_log,
                  html_403, no_filter, no_logging_access, no_logging_block, ssl_inspect,
-                 blocked_sites, blocked_url, inspect_ca_cert, inspect_ca_key):
+                 blocked_sites, blocked_url, inspect_ca_cert, inspect_ca_key, inspect_certs_folder):
         """
         Initializes the ProxyServer instance with the provided configurations.
         """
@@ -51,6 +52,7 @@ class ProxyServer:
         self.config_blocked_url = blocked_url
         self.config_inspect_cert = inspect_ca_cert
         self.config_inspect_key = inspect_ca_key
+        self.config_inspect_certs_folder = inspect_certs_folder
         if not self.no_logging_access:
             self.access_logger = configure_file_logger(access_log, "AccessLogger")
         if not self.no_logging_block:
@@ -76,8 +78,24 @@ class ProxyServer:
             self.console_logger.debug("[*] blocked_url = %s", self.config_blocked_url)
             self.console_logger.debug("[*] inspect_ca_cert = %s", self.config_inspect_cert)
             self.console_logger.debug("[*] inspect_ca_key = %s", self.config_inspect_key)
+            self.console_logger.debug(
+                "[*] inspect_certs_folder = %s",
+                self.config_inspect_certs_folder
+            )
         else:
             self.console_logger.setLevel(logging.INFO)
+
+        for file in os.listdir(self.config_inspect_certs_folder):
+            if file.endswith(".key") or file.endswith(".pem"):
+                file_path = os.path.join(self.config_inspect_certs_folder, file)
+                try:
+                    os.remove(file_path)
+                except FileNotFoundError:
+                    self.console_logger.debug("File not found: %s", file_path)
+                except PermissionError:
+                    self.console_logger.debug("Permission denied: %s", file_path)
+                except OSError as e:
+                    self.console_logger.debug("OS error deleting %s: %s", file_path, e)
 
         if not os.path.exists(self.config_blocked_sites):
             with open(self.config_blocked_sites, "w", encoding='utf-8'):
@@ -403,8 +421,8 @@ class ProxyServer:
         Returns:
             tuple: Paths to the generated certificate and private key files.
         """
-        cert_path = f"./certs/{domain}.pem"
-        key_path = f"./certs/{domain}.key"
+        cert_path = f"{self.config_inspect_certs_folder}{domain}.pem"
+        key_path = f"{self.config_inspect_certs_folder}{domain}.key"
 
         if not os.path.exists(cert_path):
             key = crypto.PKey()

@@ -1,6 +1,20 @@
 # 🚀 pyproxy
 **pyproxy** is a lightweight, fast, and customizable Python-based web proxy server designed to handle both HTTP and HTTPS traffic efficiently. It can be used for various purposes, including web scraping, traffic monitoring, and content filtering.
 
+---
+
+![GitHub Release](https://img.shields.io/github/v/release/6C656C65/pyproxy)
+![GitHub License](https://img.shields.io/github/license/6C656C65/pyproxy)
+
+![GitHub forks](https://img.shields.io/github/forks/6C656C65/pyproxy)
+![GitHub stars](https://img.shields.io/github/stars/6C656C65/pyproxy)
+![GitHub issues open](https://img.shields.io/issues/stars/6C656C65/pyproxy)
+![GitHub issues closed](https://img.shields.io/issues-closed/stars/6C656C65/pyproxy)
+
+![GitHub Actions lint](https://img.shields.io/github/actions/workflow/status/6C656C65/pyproxy/pylint.yml)
+![GitHub Actions test](https://img.shields.io/github/actions/workflow/status/6C656C65/pyproxy/unittest.yml)
+![GitHub Actions push](https://img.shields.io/github/actions/workflow/status/6C656C65/pyproxy/docker-images.yml)
+
 ## 📑 **Table of Contents**
 
 1. [Features](#-features)
@@ -25,6 +39,7 @@
 ### Install from source
 ```bash
 git clone https://github.com/6C656C65/pyproxy.git
+cd pyproxy
 pip install -r requirements.txt
 ```
 
@@ -56,9 +71,11 @@ To run the proxy in debug mode, use the `--debug` option:
 python3 pyproxy.py --debug
 ```
 
+## 📚 **Documentation**
+If you encounter any problems, or if you want to use the program in a particular way, I advise you to read the [[documentation|Home]].
+
 ## 🔧 **To do**
 
-- Documentation
 - Cancel inspection on bank site
 - Support content analysis
 - Support distant blacklist / whitelist
@@ -69,6 +86,5 @@ python3 pyproxy.py --debug
 - Admin mode, statistiques and real time request
 - Shortcut
 - Custom header
-- Remove cert
 
 ---

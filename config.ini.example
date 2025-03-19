@@ -14,6 +14,11 @@ html_403 = assets/403.html
 
 [Filtering]
 no_filter = false
+blocked_sites = config/blocked_sites.txt
+blocked_url = config/blocked_url.txt
 
 [Security]
 ssl_inspect = false
+inspect_ca_cert = certs/ca/cert.pem
+inspect_ca_key = certs/ca/key.pem
+inspect_certs_folder = certs/

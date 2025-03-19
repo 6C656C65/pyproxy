@@ -1,3 +1,9 @@
+## [0.2.6] - 2025-03-19
+### Added
+- Support distant blacklist
+### Patch
+- Deletion of generated certificates 
+
 ## [0.2.5] - 2025-03-18
 ### Added
 - Mode no logging

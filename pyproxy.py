@@ -49,9 +49,26 @@ if __name__ == "__main__":
         help="Path to the custom 403 Forbidden HTML page"
     )
     parser.add_argument("--no-filter", action="store_true", help="Disable URL and domain filtering")
+    parser.add_argument(
+        "--blocked-sites",
+        type=str,
+        help="Path to the text file containing the list of sites to block"
+    )
+    parser.add_argument(
+        "--blocked-url",
+        type=str,
+        help="Path to the text file containing the list of URLs to block"
+    )
     parser.add_argument("--no-logging-access", action="store_true", help="Disable access logging")
     parser.add_argument("--no-logging-block", action="store_true", help="Disable block logging")
     parser.add_argument("--ssl-inspect", action="store_true", help="Enable SSL inspection")
+    parser.add_argument("--inspect-ca-cert", type=str, help="Path to the CA certificate")
+    parser.add_argument("--inspect-ca-key", type=str, help="Path to the CA key")
+    parser.add_argument(
+        "--inspect-certs-folder",
+        type=str,
+        help="Path to the generated certificates folder"
+    )
 
     args = parser.parse_args()
 
@@ -70,35 +87,55 @@ if __name__ == "__main__":
         if args.block_log
         else config.get('Logging', 'block_log', fallback="logs/block.log")
     )
-
     html_403 = (
         args.html_403
         if args.html_403
         else config.get('Files', 'html_403', fallback="assets/403.html")
     )
-
     no_filter = (
         args.no_filter
         if args.no_filter
         else config.getboolean('Filtering', 'no_filter', fallback=False)
     )
-
+    blocked_sites = (
+        args.blocked_sites
+        if args.blocked_sites
+        else config.get('Filtering', 'blocked_sites', fallback="config/blocked_sites.txt")
+    )
+    blocked_url = (
+        args.blocked_url
+        if args.blocked_url
+        else config.get('Filtering', 'blocked_url', fallback="config/blocked_url.txt")
+    )
     no_logging_access = (
         args.no_logging_access
         if args.no_logging_access
         else config.getboolean('Logging', 'no_logging_access', fallback=False)
     )
-
     no_logging_block = (
         args.no_logging_block
         if args.no_logging_block
         else config.getboolean('Logging', 'no_logging_block', fallback=False)
     )
-
     ssl_inspect = (
         args.ssl_inspect
         if args.ssl_inspect
         else config.getboolean('Security', 'ssl_inspect', fallback=False)
+    )
+    inspect_certs_folder = (
+        args.inspect_certs_folder
+        if args.inspect_certs_folder
+        else config.get('Security', 'inspect_certs_folder', fallback="certs/")
+    )
+    inspect_ca_cert = (
+        args.inspect_ca_cert
+        if args.inspect_ca_cert
+        else config.get('Security', 'inspect_ca_cert', fallback="certs/ca/cert.pem")
+    )
+    inspect_ca_key = (
+        args.inspect_ca_key
+        if args.inspect_ca_key
+        else config.get('Security', 'inspect_ca_key', fallback="certs/ca/key.pem")
     )
 
     proxy = ProxyServer(
@@ -112,10 +149,11 @@ if __name__ == "__main__":
         no_logging_access=no_logging_access,
         no_logging_block=no_logging_block,
         ssl_inspect=ssl_inspect,
-        blocked_sites="config/blocked_sites.txt",
-        blocked_url="config/blocked_url.txt",
-        inspect_ca_cert="certs/ca/cert.pem",
-        inspect_ca_key="certs/ca/key.pem"
+        blocked_sites=blocked_sites,
+        blocked_url=blocked_url,
+        inspect_ca_cert=inspect_ca_cert,
+        inspect_ca_key=inspect_ca_key,
+        inspect_certs_folder=inspect_certs_folder
     )
 
     proxy.start()
