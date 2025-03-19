@@ -9,4 +9,4 @@ COPY . .
 
 EXPOSE 8080
 
-CMD ["python3", "pyproxy.py"]
+ENTRYPOINT ["python3", "pyproxy.py"]
