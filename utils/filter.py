@@ -14,14 +14,16 @@ import multiprocessing
 import time
 import sys
 import threading
+import requests
 
-def load_blacklist(blocked_sites_path: str, blocked_url_path: str) -> set:
+def load_blacklist(blocked_sites_path: str, blocked_url_path: str, filter_mode: str) -> set:
     """
-    Loads blocked FQDNs or URLs from a file into a set for fast lookup.
+    Loads blocked FQDNs or URLs from a file or URL into a set for fast lookup.
     
     Args:
-        blocked_sites_path (str): The path to the file containing blocked FQDNs.
-        blocked_url_path (str): The path to the file containing blocked URLs.
+        blocked_sites_path (str): The path or URL to the file containing blocked FQDNs.
+        blocked_url_path (str): The path or URL to the file containing blocked URLs.
+        filter_mode (str): Mode to determine if we load from local file or HTTP URL.
     
     Returns:
         set: A set of blocked domains/URLs.
@@ -29,18 +31,38 @@ def load_blacklist(blocked_sites_path: str, blocked_url_path: str) -> set:
     blocked_sites = set()
     blocked_url = set()
 
-    with open(blocked_sites_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            blocked_sites.add(line.strip())
-    with open(blocked_url_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            blocked_url.add(line.strip())
+    def load_from_file(file_path: str) -> set:
+        data = set()
+        with open(file_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                data.add(line.strip())
+        return data
+
+    def load_from_http(url: str) -> set:
+        data = set()
+        try:
+            response = requests.get(url, timeout=3)
+            response.raise_for_status()
+            for line in response.text.splitlines():
+                data.add(line.strip())
+        except requests.exceptions.RequestException as e:
+            raise requests.exceptions.RequestException(f"Failed to load data from {url}: {e}")
+        return data
+
+    if filter_mode == "local":
+        blocked_sites = load_from_file(blocked_sites_path)
+        blocked_url = load_from_file(blocked_url_path)
+    elif filter_mode == "http":
+        blocked_sites = load_from_http(blocked_sites_path)
+        blocked_url = load_from_http(blocked_url_path)
 
     return blocked_sites, blocked_url
 
+# pylint: disable=too-many-locals
 def filter_process(
     queue: multiprocessing.Queue,
     result_queue: multiprocessing.Queue,
+    filter_mode: str,
     blocked_sites_path: str,
     blocked_url_path: str
 ) -> None:
@@ -51,13 +73,14 @@ def filter_process(
         queue (multiprocessing.Queue): A queue to receive URL/domain for checking.
         result_queue (multiprocessing.Queue): A queue to send back the result of
                 the filtering (blocked or allowed).
+        filter_mode (str): Filter list mode (local or http).
         blocked_sites_path (str): The path to the file containing blocked FQDNs.
         blocked_url_path (str): The path to the file containing blocked URLs.
     """
     manager = multiprocessing.Manager()
     blocked_data = manager.dict({
-        "sites": load_blacklist(blocked_sites_path, blocked_url_path)[0],
-        "urls": load_blacklist(blocked_sites_path, blocked_url_path)[1],
+        "sites": load_blacklist(blocked_sites_path, blocked_url_path, filter_mode)[0],
+        "urls": load_blacklist(blocked_sites_path, blocked_url_path, filter_mode)[1],
     })
 
     error_event = threading.Event()
@@ -67,7 +90,8 @@ def filter_process(
             while True:
                 new_blocked_sites, new_blocked_url = load_blacklist(
                     blocked_sites_path,
-                    blocked_url_path
+                    blocked_url_path,
+                    filter_mode
                 )
 
                 blocked_data["sites"] = new_blocked_sites

@@ -50,6 +50,12 @@ if __name__ == "__main__":
     )
     parser.add_argument("--no-filter", action="store_true", help="Disable URL and domain filtering")
     parser.add_argument(
+        "--filter-mode",
+        type=str,
+        choices=["local", "http"],
+        help="Filter list mode"
+    )
+    parser.add_argument(
         "--blocked-sites",
         type=str,
         help="Path to the text file containing the list of sites to block"
@@ -96,6 +102,11 @@ if __name__ == "__main__":
         args.no_filter
         if args.no_filter
         else config.getboolean('Filtering', 'no_filter', fallback=False)
+    )
+    filter_mode = (
+        args.filter_mode
+        if args.filter_mode
+        else config.get('Filtering', 'filter_mode', fallback="local")
     )
     blocked_sites = (
         args.blocked_sites
@@ -146,6 +157,7 @@ if __name__ == "__main__":
         block_log=block_log,
         html_403=html_403,
         no_filter=no_filter,
+        filter_mode=filter_mode,
         no_logging_access=no_logging_access,
         no_logging_block=no_logging_block,
         ssl_inspect=ssl_inspect,

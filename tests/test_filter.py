@@ -33,7 +33,11 @@ class TestFilter(unittest.TestCase):
         - Ensures that the sites and URLs are correctly read and loaded into sets.
         - Verifies that the function handles the file content properly.
         """
-        blocked_sites, blocked_urls = load_blacklist("blocked_sites.txt", "blocked_urls.txt")
+        blocked_sites, blocked_urls = load_blacklist(
+            "blocked_sites.txt",
+            "blocked_urls.txt",
+            "local"
+        )
 
         self.assertIn("blocked.com", blocked_sites)
         self.assertIn("allowed.com/blocked", blocked_sites)

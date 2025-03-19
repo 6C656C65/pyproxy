@@ -32,7 +32,7 @@ class ProxyServer:
     """
     # pylint: disable=too-many-locals
     def __init__(self, host, port, debug, access_log, block_log,
-                 html_403, no_filter, no_logging_access, no_logging_block, ssl_inspect,
+                 html_403, no_filter, filter_mode, no_logging_access, no_logging_block, ssl_inspect,
                  blocked_sites, blocked_url, inspect_ca_cert, inspect_ca_key, inspect_certs_folder):
         """
         Initializes the ProxyServer instance with the provided configurations.
@@ -41,6 +41,7 @@ class ProxyServer:
         self.debug = debug
         self.html_403 = html_403
         self.no_filter = no_filter
+        self.filter_mode = filter_mode
         self.no_logging_access = no_logging_access
         self.no_logging_block = no_logging_block
         self.ssl_inspect = ssl_inspect
@@ -58,6 +59,7 @@ class ProxyServer:
         if not self.no_logging_block:
             self.block_logger = configure_file_logger(block_log, "BlockLogger")
 
+    # pylint: disable=too-many-branches, too-many-statements
     def start(self):
         """
         Starts the proxy server, initializes the filtering process if enabled,
@@ -71,6 +73,7 @@ class ProxyServer:
             self.console_logger.debug("[*] debug = %s", self.debug)
             self.console_logger.debug("[*] html_403 = %s", self.html_403)
             self.console_logger.debug("[*] no_filter = %s", self.no_filter)
+            self.console_logger.debug("[*] filter_mode = %s", self.filter_mode)
             self.console_logger.debug("[*] no_logging_access = %s", self.no_logging_access)
             self.console_logger.debug("[*] no_logging_block = %s", self.no_logging_block)
             self.console_logger.debug("[*] ssl_inspect = %s", self.ssl_inspect)
@@ -101,12 +104,13 @@ class ProxyServer:
                     except OSError as e:
                         self.console_logger.debug("OS error deleting %s: %s", file_path, e)
 
-        if not os.path.exists(self.config_blocked_sites):
-            with open(self.config_blocked_sites, "w", encoding='utf-8'):
-                pass
-        if not os.path.exists(self.config_blocked_url):
-            with open(self.config_blocked_url, "w", encoding='utf-8'):
-                pass
+        if self.filter_mode == "local":
+            if not os.path.exists(self.config_blocked_sites):
+                with open(self.config_blocked_sites, "w", encoding='utf-8'):
+                    pass
+            if not os.path.exists(self.config_blocked_url):
+                with open(self.config_blocked_url, "w", encoding='utf-8'):
+                    pass
 
         if not self.no_filter:
             self.filter_proc = multiprocessing.Process(
@@ -114,6 +118,7 @@ class ProxyServer:
                 args=(
                     self.queue,
                     self.result_queue,
+                    self.filter_mode,
                     self.config_blocked_sites,
                     self.config_blocked_url
                 )

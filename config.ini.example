@@ -14,6 +14,7 @@ html_403 = assets/403.html
 
 [Filtering]
 no_filter = false
+filter_mode = local
 blocked_sites = config/blocked_sites.txt
 blocked_url = config/blocked_url.txt
 
