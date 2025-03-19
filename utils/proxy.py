@@ -228,7 +228,7 @@ class ProxyServer:
 
         return server_host, server_port
 
-    # pylint: disable=too-many-locals,too-many-statements
+    # pylint: disable=too-many-locals,too-many-statements,too-many-branches,too-many-nested-blocks
     def handle_https_connection(self, client_socket, first_line):
         """
         Handles HTTPS connections by establishing a connection with the target server 
@@ -301,6 +301,29 @@ class ProxyServer:
                     method, path, _ = request_line.split(" ")
 
                     full_url = f"https://{server_host}{path}"
+
+                    if not self.no_filter:
+                        self.queue.put(f"{server_host}{path}")
+                        result = self.result_queue.get()
+                        if result[1] == "Blocked":
+                            if not self.no_logging_block:
+                                self.block_logger.info(
+                                    "%s - %s - %s",
+                                    ssl_client_socket.getpeername()[0],
+                                    target,
+                                    first_line
+                                )
+                            with open(self.html_403, "r", encoding='utf-8') as f:
+                                custom_403_page = f.read()
+                            response = (
+                                f"HTTP/1.1 403 Forbidden\r\n"
+                                f"Content-Length: {len(custom_403_page)}\r\n"
+                                f"\r\n"
+                                f"{custom_403_page}"
+                            )
+                            ssl_client_socket.sendall(response.encode())
+                            ssl_client_socket.close()
+                            return
 
                     if not self.no_logging_access:
                         self.access_logger.info(

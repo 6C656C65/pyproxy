@@ -18,4 +18,4 @@ def load_config(config_path: str) -> configparser.ConfigParser:
     """
     config = configparser.ConfigParser()
     config.read(config_path)
-    return config 
+    return config

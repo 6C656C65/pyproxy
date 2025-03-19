@@ -16,7 +16,7 @@
 - Support HTTP & HTTPS
 - Logging web requests
 - HTTP : Domains and URLs blacklist
-- HTTPS : Domains blakclist
+- HTTPS : Domains and URLs blakclist
 - Inspection SSL
 - Custom page for 403 Forbidden
 
@@ -59,7 +59,6 @@ python3 pyproxy.py --debug
 ## 🔧 **To do**
 
 - Documentation
-- Support HTTPS Filtering URLs
 - Cancel inspection on bank site
 - Support content analysis
 - Support distant blacklist / whitelist
@@ -70,5 +69,6 @@ python3 pyproxy.py --debug
 - Admin mode, statistiques and real time request
 - Shortcut
 - Custom header
+- Remove cert
 
 ---
