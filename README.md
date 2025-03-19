@@ -8,8 +8,8 @@
 
 ![GitHub forks](https://img.shields.io/github/forks/6C656C65/pyproxy)
 ![GitHub stars](https://img.shields.io/github/stars/6C656C65/pyproxy)
-![GitHub issues open](https://img.shields.io/issues/stars/6C656C65/pyproxy)
-![GitHub issues closed](https://img.shields.io/issues-closed/stars/6C656C65/pyproxy)
+![GitHub issues open](https://img.shields.io/issues/6C656C65/pyproxy)
+![GitHub issues closed](https://img.shields.io/issues-closed/6C656C65/pyproxy)
 
 ![GitHub Actions lint](https://img.shields.io/github/actions/workflow/status/6C656C65/pyproxy/pylint.yml)
 ![GitHub Actions test](https://img.shields.io/github/actions/workflow/status/6C656C65/pyproxy/unittest.yml)
@@ -73,7 +73,7 @@ python3 pyproxy.py --debug
 ```
 
 ## 📚 **Documentation**
-If you encounter any problems, or if you want to use the program in a particular way, I advise you to read the [[documentation|Home]].
+If you encounter any problems, or if you want to use the program in a particular way, I advise you to read the [documentation](https://github.com/6C656C65/pyproxy/wiki).
 
 ## 🔧 **To do**
 
