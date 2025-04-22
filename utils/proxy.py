@@ -22,6 +22,7 @@ from OpenSSL import crypto
 
 from utils.filter import filter_process
 from utils.shortcuts import shortcuts_process
+from utils.cancel_inspect import cancel_inspect_process
 from utils.logger import configure_file_logger, configure_console_logger
 
 class ProxyServer:
@@ -35,7 +36,7 @@ class ProxyServer:
     def __init__(self, host, port, debug, access_log, block_log,
                  html_403, no_filter, filter_mode, no_logging_access, no_logging_block, ssl_inspect,
                  blocked_sites, blocked_url, shortcuts, inspect_ca_cert,
-                 inspect_ca_key, inspect_certs_folder):
+                 inspect_ca_key, inspect_certs_folder, cancel_inspect):
         """
         Initializes the ProxyServer instance with the provided configurations.
         """
@@ -53,10 +54,14 @@ class ProxyServer:
         self.shortcuts_proc = None
         self.shortcuts_queue = multiprocessing.Queue()
         self.shortcuts_result_queue = multiprocessing.Queue()
+        self.cancel_inspect_proc = None
+        self.cancel_inspect_queue = multiprocessing.Queue()
+        self.cancel_inspect_result_queue = multiprocessing.Queue()
         self.console_logger = configure_console_logger()
         self.config_blocked_sites = blocked_sites
         self.config_blocked_url = blocked_url
         self.config_shortcuts = shortcuts
+        self.config_cancel_inspect = cancel_inspect
         self.config_inspect_cert = inspect_ca_cert
         self.config_inspect_key = inspect_ca_key
         self.config_inspect_certs_folder = inspect_certs_folder
@@ -145,6 +150,18 @@ class ProxyServer:
             self.shortcuts_proc.start()
             self.console_logger.debug("[*] Starting the shortcuts process...")
 
+        if self.config_cancel_inspect and os.path.isfile(self.config_cancel_inspect):
+            self.cancel_inspect_proc = multiprocessing.Process(
+                target=cancel_inspect_process,
+                args=(
+                    self.cancel_inspect_queue,
+                    self.cancel_inspect_result_queue,
+                    self.config_cancel_inspect
+                )
+            )
+            self.cancel_inspect_proc.start()
+            self.console_logger.debug("[*] Starting the cancel inspection process...")
+
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind(self.host_port)
         server.listen(10)
@@ -198,11 +215,8 @@ class ProxyServer:
 
         if self.config_shortcuts:
             domain, _ = self.parse_url(url)
-            print(url)
-            print(domain)
             self.shortcuts_queue.put(domain)
             shortcut_url = self.shortcuts_result_queue.get()
-            print(shortcut_url)
             if shortcut_url:
                 response = (
                     f"HTTP/1.1 302 Found\r\n"
@@ -344,6 +358,10 @@ class ProxyServer:
                 return
 
         if self.ssl_inspect:
+            self.cancel_inspect_queue.put(server_host)
+            not_inspect = self.cancel_inspect_result_queue.get()
+
+        if self.ssl_inspect and not not_inspect:
             cert_path, key_path = self.generate_certificate(server_host)
             client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
             client_context.load_cert_chain(certfile=cert_path, keyfile=key_path)

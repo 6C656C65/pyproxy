@@ -44,11 +44,6 @@ if __name__ == "__main__":
         help="Path to the block log file"
     )
     parser.add_argument(
-        "--shortcuts",
-        type=str,
-        help="Path to the shortcuts file"
-    )
-    parser.add_argument(
         "--html-403",
         type=str,
         help="Path to the custom 403 Forbidden HTML page"
@@ -70,6 +65,11 @@ if __name__ == "__main__":
         type=str,
         help="Path to the text file containing the list of URLs to block"
     )
+    parser.add_argument(
+        "--shortcuts",
+        type=str,
+        help="Path to the text file containing the list of shortcuts"
+    )
     parser.add_argument("--no-logging-access", action="store_true", help="Disable access logging")
     parser.add_argument("--no-logging-block", action="store_true", help="Disable block logging")
     parser.add_argument("--ssl-inspect", action="store_true", help="Enable SSL inspection")
@@ -79,6 +79,11 @@ if __name__ == "__main__":
         "--inspect-certs-folder",
         type=str,
         help="Path to the generated certificates folder"
+    )
+    parser.add_argument(
+        "--cancel-inspect",
+        type=str,
+        help="Path to the text file containing the list of URLs without ssl inspection"
     )
 
     args = parser.parse_args()
@@ -158,6 +163,11 @@ if __name__ == "__main__":
         if args.inspect_ca_key
         else config.get('Security', 'inspect_ca_key', fallback="certs/ca/key.pem")
     )
+    cancel_inspect = (
+        args.inspect_ca_key
+        if args.inspect_ca_key
+        else config.get('Security', 'cancel_inspect', fallback="config/cancel_inspect.txt")
+    )
 
     proxy = ProxyServer(
         host=host,
@@ -176,7 +186,8 @@ if __name__ == "__main__":
         shortcuts=shortcuts,
         inspect_ca_cert=inspect_ca_cert,
         inspect_ca_key=inspect_ca_key,
-        inspect_certs_folder=inspect_certs_folder
+        inspect_certs_folder=inspect_certs_folder,
+        cancel_inspect=cancel_inspect
     )
 
     proxy.start()

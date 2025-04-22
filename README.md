@@ -34,6 +34,8 @@
 - Inspection SSL
 - Custom page for 403 Forbidden
 - Support distant (http) blacklist
+- Shortcuts
+- Cancel inspection on bank site
 
 ## 📦 **Installation**
 
@@ -77,7 +79,6 @@ If you encounter any problems, or if you want to use the program in a particular
 
 ## 🔧 **To do**
 
-- Cancel inspection on bank site
 - Support content analysis
 - Caching of latest and most searched pages
 - Adding ACL
