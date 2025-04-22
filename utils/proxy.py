@@ -21,6 +21,7 @@ import ssl
 from OpenSSL import crypto
 
 from utils.filter import filter_process
+from utils.shortcuts import shortcuts_process
 from utils.logger import configure_file_logger, configure_console_logger
 
 class ProxyServer:
@@ -33,7 +34,7 @@ class ProxyServer:
     # pylint: disable=too-many-locals
     def __init__(self, host, port, debug, access_log, block_log,
                  html_403, no_filter, filter_mode, no_logging_access, no_logging_block, ssl_inspect,
-                 blocked_sites, blocked_url, inspect_ca_cert, inspect_ca_key, inspect_certs_folder):
+                 blocked_sites, blocked_url, shortcuts, inspect_ca_cert, inspect_ca_key, inspect_certs_folder):
         """
         Initializes the ProxyServer instance with the provided configurations.
         """
@@ -46,11 +47,15 @@ class ProxyServer:
         self.no_logging_block = no_logging_block
         self.ssl_inspect = ssl_inspect
         self.filter_proc = None
-        self.queue = multiprocessing.Queue()
-        self.result_queue = multiprocessing.Queue()
+        self.filter_queue = multiprocessing.Queue()
+        self.filter_result_queue = multiprocessing.Queue()
+        self.shortcuts_proc = None
+        self.shortcuts_queue = multiprocessing.Queue()
+        self.shortcuts_result_queue = multiprocessing.Queue()
         self.console_logger = configure_console_logger()
         self.config_blocked_sites = blocked_sites
         self.config_blocked_url = blocked_url
+        self.config_shortcuts = shortcuts
         self.config_inspect_cert = inspect_ca_cert
         self.config_inspect_key = inspect_ca_key
         self.config_inspect_certs_folder = inspect_certs_folder
@@ -79,6 +84,7 @@ class ProxyServer:
             self.console_logger.debug("[*] ssl_inspect = %s", self.ssl_inspect)
             self.console_logger.debug("[*] blocked_sites = %s", self.config_blocked_sites)
             self.console_logger.debug("[*] blocked_url = %s", self.config_blocked_url)
+            self.console_logger.debug("[*] shortcuts = %s", self.config_shortcuts)
             self.console_logger.debug("[*] inspect_ca_cert = %s", self.config_inspect_cert)
             self.console_logger.debug("[*] inspect_ca_key = %s", self.config_inspect_key)
             self.console_logger.debug(
@@ -116,14 +122,27 @@ class ProxyServer:
             self.filter_proc = multiprocessing.Process(
                 target=filter_process,
                 args=(
-                    self.queue,
-                    self.result_queue,
+                    self.filter_queue,
+                    self.filter_result_queue,
                     self.filter_mode,
                     self.config_blocked_sites,
                     self.config_blocked_url
                 )
             )
             self.filter_proc.start()
+            self.console_logger.debug("[*] Starting the filter process...")
+
+        if self.config_shortcuts and os.path.isfile(self.config_shortcuts):
+            self.shortcuts_proc = multiprocessing.Process(
+                target=shortcuts_process,
+                args=(
+                    self.shortcuts_queue,
+                    self.shortcuts_result_queue,
+                    self.config_shortcuts
+                )
+            )
+            self.shortcuts_proc.start()
+            self.console_logger.debug("[*] Starting the shortcuts process...")
 
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind(self.host_port)
@@ -176,9 +195,28 @@ class ProxyServer:
         first_line = request.decode(errors='ignore').split("\n")[0]
         url = first_line.split(" ")[1]
 
+        if self.config_shortcuts:
+            domain, _ = self.parse_url(url)
+            print(url)
+            print(domain)
+            self.shortcuts_queue.put(domain)
+            shortcut_url = self.shortcuts_result_queue.get()
+            print(shortcut_url)
+            if shortcut_url:
+                response = (
+                    "HTTP/1.1 302 Found\r\n"
+                    "Location: {shortcut_url}\r\n"
+                    "Content-Length: 0\r\n"
+                    "\r\n"
+                ).format(shortcut_url=shortcut_url)
+                
+                client_socket.sendall(response.encode())
+                client_socket.close()
+                return
+
         if not self.no_filter:
-            self.queue.put(url)
-            result = self.result_queue.get()
+            self.filter_queue.put(url)
+            result = self.filter_result_queue.get()
             if result[1] == "Blocked":
                 if not self.no_logging_block:
                     self.block_logger.info(
@@ -218,16 +256,28 @@ class ProxyServer:
             url (str): The target URL from the HTTP request.
         """
         server_host, server_port = self.parse_url(url)
-        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_socket.connect((server_host, server_port))
-        server_socket.sendall(request)
 
-        while True:
-            response = server_socket.recv(4096)
-            if len(response) > 0:
-                client_socket.send(response)
-            else:
-                break
+        try:
+            server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            server_socket.connect((server_host, server_port))
+            server_socket.sendall(request)
+
+            while True:
+                response = server_socket.recv(4096)
+                if len(response) > 0:
+                    client_socket.send(response)
+                else:
+                    break
+        except Exception as e:
+            self.console_logger.error(f"Error connecting to the server {server_host}: {e}")
+            response = (
+                f"HTTP/1.1 502 Bad Gateway\r\n"
+                f"Content-Length: {len('Bad Gateway')} \r\n"
+                f"\r\n"
+                f"Bad Gateway"
+            )
+            client_socket.sendall(response.encode())
+            client_socket.close()            
 
     def parse_url(self, url):
         """
@@ -270,8 +320,8 @@ class ProxyServer:
         server_port = int(server_port)
 
         if not self.no_filter:
-            self.queue.put(target)
-            result = self.result_queue.get()
+            self.filter_queue.put(target)
+            result = self.filter_result_queue.get()
             if result[1] == "Blocked":
                 if not self.no_logging_block:
                     self.block_logger.info(
@@ -330,8 +380,8 @@ class ProxyServer:
                     full_url = f"https://{server_host}{path}"
 
                     if not self.no_filter:
-                        self.queue.put(f"{server_host}{path}")
-                        result = self.result_queue.get()
+                        self.filter_queue.put(f"{server_host}{path}")
+                        result = self.filter_result_queue.get()
                         if result[1] == "Blocked":
                             if not self.no_logging_block:
                                 self.block_logger.info(
@@ -381,17 +431,28 @@ class ProxyServer:
                 client_socket.close()
 
         else:
-            server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            server_socket.connect((server_host, server_port))
-            client_socket.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
-            if not self.no_logging_access:
-                self.access_logger.info(
-                    "%s - %s - %s",
-                    client_socket.getpeername()[0],
-                    f"https://{server_host}",
-                    first_line
+            try:
+                server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                server_socket.connect((server_host, server_port))
+                client_socket.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+                if not self.no_logging_access:
+                    self.access_logger.info(
+                        "%s - %s - %s",
+                        client_socket.getpeername()[0],
+                        f"https://{server_host}",
+                        first_line
+                    )
+                self.transfer_data_between_sockets(client_socket, server_socket)
+            except Exception as e:
+                self.console_logger.error(f"Error connecting to the server {server_host}: {e}")
+                response = (
+                    f"HTTP/1.1 502 Bad Gateway\r\n"
+                    f"Content-Length: {len('Bad Gateway')} \r\n"
+                    f"\r\n"
+                    f"Bad Gateway"
                 )
-            self.transfer_data_between_sockets(client_socket, server_socket)
+                client_socket.sendall(response.encode())
+                client_socket.close()  
 
     def transfer_data_between_sockets(self, client_socket, server_socket):
         """

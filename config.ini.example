@@ -18,6 +18,9 @@ filter_mode = local
 blocked_sites = config/blocked_sites.txt
 blocked_url = config/blocked_url.txt
 
+[Options]
+shortcuts = config/shortcuts.txt
+
 [Security]
 ssl_inspect = false
 inspect_ca_cert = certs/ca/cert.pem

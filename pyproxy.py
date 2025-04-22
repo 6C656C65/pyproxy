@@ -44,6 +44,11 @@ if __name__ == "__main__":
         help="Path to the block log file"
     )
     parser.add_argument(
+        "--shortcuts",
+        type=str,
+        help="Path to the shortcuts file"
+    )
+    parser.add_argument(
         "--html-403",
         type=str,
         help="Path to the custom 403 Forbidden HTML page"
@@ -118,6 +123,11 @@ if __name__ == "__main__":
         if args.blocked_url
         else config.get('Filtering', 'blocked_url', fallback="config/blocked_url.txt")
     )
+    shortcuts = (
+        args.blocked_url
+        if args.blocked_url
+        else config.get('Options', 'shortcuts', fallback="config/shortcuts.txt")
+    )
     no_logging_access = (
         args.no_logging_access
         if args.no_logging_access
@@ -163,6 +173,7 @@ if __name__ == "__main__":
         ssl_inspect=ssl_inspect,
         blocked_sites=blocked_sites,
         blocked_url=blocked_url,
+        shortcuts=shortcuts,
         inspect_ca_cert=inspect_ca_cert,
         inspect_ca_key=inspect_ca_key,
         inspect_certs_folder=inspect_certs_folder

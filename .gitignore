@@ -172,6 +172,7 @@ cython_debug/
 
 # Config file
 config/*.txt
+!config/*.example.txt
 
 # Certs folder
 certs/*.key
