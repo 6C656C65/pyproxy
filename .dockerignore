@@ -4,10 +4,13 @@ __pycache__/
 config/*.txt
 logs/*.log
 
+tests/
+config.ini.example
+
 .github
 .bumpversion.cfg
 .gitignore
 .git
 .pylintrc
 .readthedocs.yaml
-CHANGELOFG.md
+CHANGELOG.md
