@@ -1,32 +1,29 @@
 """
-filter.py
+shortcuts.py
 
-This module contains functions and a process to filter and block domains and URLs.
-It loads blocked domain names and URLs from specified files, then listens for 
-incoming requests to check if the domain or URL should be blocked.
+This module contains functions and a process to load and manage URL shortcuts.
+It loads shortcuts (alias to URL mappings) from a specified file, and provides
+a process that listens for requests to resolve an alias to its corresponding URL.
 
 Functions:
-- load_blacklist: Loads blocked FQDNs and URLs from files into sets for fast lookup.
-- filter_process: The process that checks whether a domain or URL is blocked.
+- load_shortcuts: Loads URL alias mappings from a file into a dictionary for fast lookup.
+- shortcuts_process: The process that listens for alias requests and resolves them to URLs.
 """
 
 import multiprocessing
 import time
 import sys
 import threading
-import requests
 
 def load_shortcuts(shortcuts_path: str) -> dict:
     """
-    Loads blocked FQDNs or URLs from a file or URL into a set for fast lookup.
+    Loads URL alias mappings from a file into a dictionary for fast lookup.
     
     Args:
-        blocked_sites_path (str): The path or URL to the file containing blocked FQDNs.
-        blocked_url_path (str): The path or URL to the file containing blocked URLs.
-        filter_mode (str): Mode to determine if we load from local file or HTTP URL.
+        shortcuts_path (str): The path to the file containing alias=URL mappings.
     
     Returns:
-        set: A set of blocked domains/URLs.
+        dict: A dictionary mapping aliases to URLs.
     """
     shortcuts = {}
 
@@ -34,7 +31,7 @@ def load_shortcuts(shortcuts_path: str) -> dict:
         for line in f:
             line = line.strip()
             if "=" in line:
-                alias, url = line.split("=", 1) 
+                alias, url = line.split("=", 1)
                 shortcuts[alias.strip()] = url.strip()
 
     return shortcuts
@@ -46,15 +43,12 @@ def shortcuts_process(
     shortcuts_path: str
 ) -> None:
     """
-    Process that listens for requests and checks if the domain/URL should be blocked.
+    Process that listens for alias requests and resolves them to URLs.
     
     Args:
-        queue (multiprocessing.Queue): A queue to receive URL/domain for checking.
-        result_queue (multiprocessing.Queue): A queue to send back the result of
-                the filtering (blocked or allowed).
-        filter_mode (str): Filter list mode (local or http).
-        blocked_sites_path (str): The path to the file containing blocked FQDNs.
-        blocked_url_path (str): The path to the file containing blocked URLs.
+        queue (multiprocessing.Queue): A queue to receive alias for URL resolution.
+        result_queue (multiprocessing.Queue): A queue to send back the resolved URL.
+        shortcuts_path (str): The path to the file containing alias=URL mappings.
     """
     manager = multiprocessing.Manager()
     shortcuts_data = manager.dict({

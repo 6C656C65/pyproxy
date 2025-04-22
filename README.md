@@ -84,7 +84,6 @@ If you encounter any problems, or if you want to use the program in a particular
 - Proxy authentication
 - Benchmark
 - Admin mode, statistiques and real time request
-- Shortcut
 - Custom header
 
 ---

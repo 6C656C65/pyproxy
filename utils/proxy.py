@@ -34,7 +34,8 @@ class ProxyServer:
     # pylint: disable=too-many-locals
     def __init__(self, host, port, debug, access_log, block_log,
                  html_403, no_filter, filter_mode, no_logging_access, no_logging_block, ssl_inspect,
-                 blocked_sites, blocked_url, shortcuts, inspect_ca_cert, inspect_ca_key, inspect_certs_folder):
+                 blocked_sites, blocked_url, shortcuts, inspect_ca_cert,
+                 inspect_ca_key, inspect_certs_folder):
         """
         Initializes the ProxyServer instance with the provided configurations.
         """
@@ -204,12 +205,12 @@ class ProxyServer:
             print(shortcut_url)
             if shortcut_url:
                 response = (
-                    "HTTP/1.1 302 Found\r\n"
-                    "Location: {shortcut_url}\r\n"
-                    "Content-Length: 0\r\n"
+                    f"HTTP/1.1 302 Found\r\n"
+                    f"Location: {shortcut_url}\r\n"
+                    f"Content-Length: 0\r\n"
                     "\r\n"
-                ).format(shortcut_url=shortcut_url)
-                
+                )
+
                 client_socket.sendall(response.encode())
                 client_socket.close()
                 return
@@ -268,16 +269,16 @@ class ProxyServer:
                     client_socket.send(response)
                 else:
                     break
-        except Exception as e:
-            self.console_logger.error(f"Error connecting to the server {server_host}: {e}")
+        except (socket.timeout, socket.gaierror, ConnectionRefusedError, OSError) as e:
+            self.console_logger.error("Error connecting to the server %s : %s", server_host, e)
             response = (
                 f"HTTP/1.1 502 Bad Gateway\r\n"
                 f"Content-Length: {len('Bad Gateway')} \r\n"
-                f"\r\n"
+                "\r\n"
                 f"Bad Gateway"
             )
             client_socket.sendall(response.encode())
-            client_socket.close()            
+            client_socket.close()
 
     def parse_url(self, url):
         """
@@ -443,8 +444,8 @@ class ProxyServer:
                         first_line
                     )
                 self.transfer_data_between_sockets(client_socket, server_socket)
-            except Exception as e:
-                self.console_logger.error(f"Error connecting to the server {server_host}: {e}")
+            except (socket.timeout, socket.gaierror, ConnectionRefusedError, OSError) as e:
+                self.console_logger.error("Error connecting to the server %s: %s", server_host, e)
                 response = (
                     f"HTTP/1.1 502 Bad Gateway\r\n"
                     f"Content-Length: {len('Bad Gateway')} \r\n"
@@ -452,7 +453,7 @@ class ProxyServer:
                     f"Bad Gateway"
                 )
                 client_socket.sendall(response.encode())
-                client_socket.close()  
+                client_socket.close()
 
     def transfer_data_between_sockets(self, client_socket, server_socket):
         """
