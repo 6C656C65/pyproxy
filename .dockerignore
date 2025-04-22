@@ -14,3 +14,5 @@ config.ini.example
 .pylintrc
 .readthedocs.yaml
 CHANGELOG.md
+Dockerfile
+.dockerignore
