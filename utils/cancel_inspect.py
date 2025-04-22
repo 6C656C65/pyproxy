@@ -59,8 +59,8 @@ def cancel_inspect_process(
         try:
             while True:
                 new_cancel_inspect = load_cancel_inspect(cancel_inspect_path)
-
-                cancel_inspect_data = new_cancel_inspect
+                cancel_inspect_data.clear()
+                cancel_inspect_data.extend(new_cancel_inspect)
 
                 time.sleep(5)
         except (IOError, ValueError) as e:
@@ -77,8 +77,6 @@ def cancel_inspect_process(
 
         try:
             url = queue.get()
-            print("url", url)
-            print("cancel_inspect_data", cancel_inspect_data)
             if url in cancel_inspect_data:
                 result_queue.put(True)
             else:

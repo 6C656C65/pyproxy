@@ -357,6 +357,7 @@ class ProxyServer:
                 client_socket.close()
                 return
 
+        not_inspect = False
         if self.ssl_inspect:
             self.cancel_inspect_queue.put(server_host)
             not_inspect = self.cancel_inspect_result_queue.get()
