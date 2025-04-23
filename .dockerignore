@@ -4,6 +4,10 @@ __pycache__/
 config/*.txt
 logs/*.log
 
+certs/*.key
+certs/*.pem
+!certs/ca/*
+
 tests/
 config.ini.example
 

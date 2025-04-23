@@ -1,15 +1,15 @@
 FROM python:3.13-slim as builder
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
-
-
-FROM python:3.13-slim
-RUN useradd -m -s /bin/bash pyproxy
-WORKDIR /app
-COPY --from=builder /install /usr/local
+RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
-RUN chown -R pyproxy:pyproxy /app
-USER pyproxy
+RUN chmod -R 777 /app/logs
+RUN chmod -R 777 /app/config
+
+
+FROM gcr.io/distroless/python3-debian12:nonroot
+WORKDIR /app
+COPY --from=builder /usr/local /usr/local
+COPY --from=builder /app /app
 EXPOSE 8080
 ENTRYPOINT ["python3", "pyproxy.py"]
