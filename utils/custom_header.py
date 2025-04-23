@@ -2,7 +2,7 @@
 custom_header.py
 
 This module contains functions and a process to load and monitor custom header entries.
-It reads a file containing custom header data and checks whether specific entries exist in that file.
+It reads a file with custom header data and checks if specific entries exist in it.
 The file is monitored in a background thread for live updates.
 
 Functions:

@@ -88,6 +88,5 @@ If you encounter any problems, or if you want to use the program in a particular
 - Admin mode, statistiques and real time request
 - Image slim wihtout admin interface
 - Fix HSTS
-- Wiki ssl inspection (volume certs/ca...)
 
 ---
