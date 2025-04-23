@@ -20,6 +20,7 @@ blocked_url = config/blocked_url.txt
 
 [Options]
 shortcuts = config/shortcuts.txt
+custom_header = config/custom_header.json
 
 [Security]
 ssl_inspect = false

@@ -23,6 +23,7 @@ from OpenSSL import crypto
 from utils.filter import filter_process
 from utils.shortcuts import shortcuts_process
 from utils.cancel_inspect import cancel_inspect_process
+from utils.custom_header import custom_header_process
 from utils.logger import configure_file_logger, configure_console_logger
 
 class ProxyServer:
@@ -35,7 +36,7 @@ class ProxyServer:
     # pylint: disable=too-many-locals
     def __init__(self, host, port, debug, access_log, block_log,
                  html_403, no_filter, filter_mode, no_logging_access, no_logging_block, ssl_inspect,
-                 blocked_sites, blocked_url, shortcuts, inspect_ca_cert,
+                 blocked_sites, blocked_url, shortcuts, custom_header, inspect_ca_cert,
                  inspect_ca_key, inspect_certs_folder, cancel_inspect):
         """
         Initializes the ProxyServer instance with the provided configurations.
@@ -57,10 +58,14 @@ class ProxyServer:
         self.cancel_inspect_proc = None
         self.cancel_inspect_queue = multiprocessing.Queue()
         self.cancel_inspect_result_queue = multiprocessing.Queue()
+        self.custom_header_proc = None
+        self.custom_header_queue = multiprocessing.Queue()
+        self.custom_header_result_queue = multiprocessing.Queue()
         self.console_logger = configure_console_logger()
         self.config_blocked_sites = blocked_sites
         self.config_blocked_url = blocked_url
         self.config_shortcuts = shortcuts
+        self.config_custom_header = custom_header
         self.config_cancel_inspect = cancel_inspect
         self.config_inspect_cert = inspect_ca_cert
         self.config_inspect_key = inspect_ca_key
@@ -91,6 +96,7 @@ class ProxyServer:
             self.console_logger.debug("[*] blocked_sites = %s", self.config_blocked_sites)
             self.console_logger.debug("[*] blocked_url = %s", self.config_blocked_url)
             self.console_logger.debug("[*] shortcuts = %s", self.config_shortcuts)
+            self.console_logger.debug("[*] custom_header = %s", self.config_custom_header)
             self.console_logger.debug("[*] inspect_ca_cert = %s", self.config_inspect_cert)
             self.console_logger.debug("[*] inspect_ca_key = %s", self.config_inspect_key)
             self.console_logger.debug(
@@ -162,6 +168,18 @@ class ProxyServer:
             self.cancel_inspect_proc.start()
             self.console_logger.debug("[*] Starting the cancel inspection process...")
 
+        if self.config_custom_header and os.path.isfile(self.config_custom_header):
+            self.custom_header_proc = multiprocessing.Process(
+                target=custom_header_process,
+                args=(
+                    self.custom_header_queue,
+                    self.custom_header_result_queue,
+                    self.config_custom_header
+                )
+            )
+            self.custom_header_proc.start()
+            self.console_logger.debug("[*] Starting the custom header process...")
+
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind(self.host_port)
         server.listen(10)
@@ -213,6 +231,13 @@ class ProxyServer:
         first_line = request.decode(errors='ignore').split("\n")[0]
         url = first_line.split(" ")[1]
 
+        if self.config_custom_header and os.path.isfile(self.config_custom_header):
+            headers = self.extract_headers(request.decode(errors='ignore'))
+            self.custom_header_queue.put(url)
+            new_headers = self.custom_header_result_queue.get()
+            headers.update(new_headers)
+            print("headers", headers)
+
         if self.config_shortcuts:
             domain, _ = self.parse_url(url)
             self.shortcuts_queue.put(domain)
@@ -259,7 +284,26 @@ class ProxyServer:
                 f"http://{server_host}",
                 first_line
             )
-        self.forward_request_to_server(client_socket, request, url)
+
+        if self.config_custom_header and os.path.isfile(self.config_custom_header):
+            request_lines = request.decode(errors='ignore').split("\r\n")
+            request_line = request_lines[0]  # GET / HTTP/1.1
+
+            header_lines = [f"{key}: {value}" for key, value in headers.items()]
+            reconstructed_headers = "\r\n".join(header_lines)
+
+            if "\r\n\r\n" in request.decode(errors='ignore'):
+                body = request.decode(errors='ignore').split("\r\n\r\n", 1)[1]
+            else:
+                body = ""
+
+            modified_request = f"{request_line}\r\n{reconstructed_headers}\r\n\r\n{body}".encode()
+
+            # 5. Envoyer au serveur
+            self.forward_request_to_server(client_socket, modified_request, url)
+
+        else:
+            self.forward_request_to_server(client_socket, request, url)
 
     def forward_request_to_server(self, client_socket, request, url):
         """
@@ -319,6 +363,24 @@ class ProxyServer:
             server_port = int(url[(port_pos + 1):path_pos])
 
         return server_host, server_port
+
+    def extract_headers(self, request_str):
+        """
+        Extracts the HTTP headers from a raw HTTP request string.
+
+        Args:
+            request_str (str): The full HTTP request as a decoded string.
+
+        Returns:
+            dict: A dictionary containing the HTTP header fields as key-value pairs.
+        """
+        headers = {}
+        lines = request_str.split("\n")[1:]
+        for line in lines:
+            if line.strip():
+                key, value = line.split(":", 1)
+                headers[key.strip()] = value.strip()
+        return headers
 
     # pylint: disable=too-many-locals,too-many-statements,too-many-branches,too-many-nested-blocks
     def handle_https_connection(self, client_socket, first_line):

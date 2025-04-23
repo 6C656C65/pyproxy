@@ -70,6 +70,11 @@ if __name__ == "__main__":
         type=str,
         help="Path to the text file containing the list of shortcuts"
     )
+    parser.add_argument(
+        "--custom-header",
+        type=str,
+        help="Path to the json file containing the list of custom headers"
+    )
     parser.add_argument("--no-logging-access", action="store_true", help="Disable access logging")
     parser.add_argument("--no-logging-block", action="store_true", help="Disable block logging")
     parser.add_argument("--ssl-inspect", action="store_true", help="Enable SSL inspection")
@@ -133,6 +138,11 @@ if __name__ == "__main__":
         if args.blocked_url
         else config.get('Options', 'shortcuts', fallback="config/shortcuts.txt")
     )
+    custom_header = (
+        args.blocked_url
+        if args.blocked_url
+        else config.get('Options', 'custom_header', fallback="config/custom_header.json")
+    )
     no_logging_access = (
         args.no_logging_access
         if args.no_logging_access
@@ -184,6 +194,7 @@ if __name__ == "__main__":
         blocked_sites=blocked_sites,
         blocked_url=blocked_url,
         shortcuts=shortcuts,
+        custom_header=custom_header,
         inspect_ca_cert=inspect_ca_cert,
         inspect_ca_key=inspect_ca_key,
         inspect_certs_folder=inspect_certs_folder,

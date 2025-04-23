@@ -36,6 +36,7 @@
 - Support distant (http) blacklist
 - Shortcuts
 - Cancel inspection on bank site
+- Custom header
 
 ## 📦 **Installation**
 
@@ -86,7 +87,6 @@ If you encounter any problems, or if you want to use the program in a particular
 - Benchmark
 - Admin mode, statistiques and real time request
 - Image slim wihtout admin interface
-- Custom header
 - Fix HSTS
 - Wiki ssl inspection (volume certs/ca...)
 

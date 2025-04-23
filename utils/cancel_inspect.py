@@ -59,9 +59,7 @@ def cancel_inspect_process(
         try:
             while True:
                 new_cancel_inspect = load_cancel_inspect(cancel_inspect_path)
-                cancel_inspect_data.clear()
-                cancel_inspect_data.extend(new_cancel_inspect)
-
+                cancel_inspect_data[:] = new_cancel_inspect
                 time.sleep(5)
         except (IOError, ValueError) as e:
             print(f"File monitor error: {e}")

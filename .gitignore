@@ -171,8 +171,8 @@ cython_debug/
 .pypirc
 
 # Config file
-config/*.txt
-!config/*.example.txt
+config/*
+!config/*.example*
 
 # Certs folder
 certs/*.key
