@@ -19,16 +19,14 @@ class ProxyHandlers:
     handling both HTTP and HTTPS requests. It processes request forwarding,
     blocking, SSL inspection, and custom headers based on configuration settings.
     """
-    def __init__(self, html_403, no_filter, no_logging_access, no_logging_block, ssl_inspect,
+    def __init__(self, html_403, logger_config, filter_config, ssl_config,
                  filter_queue, filter_result_queue, shortcuts_queue, shortcuts_result_queue,
                  cancel_inspect_queue, cancel_inspect_result_queue, custom_header_queue,
-                 custom_header_result_queue, console_logger, shortcuts, custom_header, inspect_cert,
-                 inspect_key, inspect_certs_folder, access_logger, block_logger):
+                 custom_header_result_queue, console_logger, shortcuts, custom_header):
         self.html_403 = html_403
-        self.no_filter = no_filter
-        self.no_logging_access = no_logging_access
-        self.no_logging_block = no_logging_block
-        self.ssl_inspect = ssl_inspect
+        self.logger_config = logger_config
+        self.filter_config = filter_config
+        self.ssl_config = ssl_config
         self.filter_queue = filter_queue
         self.filter_result_queue = filter_result_queue
         self.shortcuts_queue = shortcuts_queue
@@ -40,11 +38,6 @@ class ProxyHandlers:
         self.console_logger = console_logger
         self.config_shortcuts = shortcuts
         self.config_custom_header = custom_header
-        self.config_inspect_cert = inspect_cert
-        self.config_inspect_key = inspect_key
-        self.config_inspect_certs_folder = inspect_certs_folder
-        self.access_logger = access_logger
-        self.block_logger = block_logger
 
     def handle_client(self, client_socket):
         """
@@ -101,12 +94,12 @@ class ProxyHandlers:
                 client_socket.close()
                 return
 
-        if not self.no_filter:
+        if not self.filter_config.no_filter:
             self.filter_queue.put(url)
             result = self.filter_result_queue.get()
             if result[1] == "Blocked":
-                if not self.no_logging_block:
-                    self.block_logger.info(
+                if not self.logger_config.no_logging_block:
+                    self.logger_config.block_logger.info(
                         "%s - %s - %s",
                         client_socket.getpeername()[0],
                         url,
@@ -124,8 +117,8 @@ class ProxyHandlers:
                 client_socket.close()
                 return
         server_host, _ = self.parse_url(url)
-        if not self.no_logging_access:
-            self.access_logger.info(
+        if not self.logger_config.no_logging_access:
+            self.logger_config.access_logger.info(
                 "%s - %s - %s",
                 client_socket.getpeername()[0],
                 f"http://{server_host}",
@@ -243,12 +236,12 @@ class ProxyHandlers:
         server_host, server_port = target.split(":")
         server_port = int(server_port)
 
-        if not self.no_filter:
+        if not self.filter_config.no_filter:
             self.filter_queue.put(target)
             result = self.filter_result_queue.get()
             if result[1] == "Blocked":
-                if not self.no_logging_block:
-                    self.block_logger.info(
+                if not self.logger_config.no_logging_block:
+                    self.logger_config.block_logger.info(
                         "%s - %s - %s",
                         client_socket.getpeername()[0],
                         target,
@@ -267,11 +260,11 @@ class ProxyHandlers:
                 return
 
         not_inspect = False
-        if self.ssl_inspect:
+        if self.ssl_config.ssl_inspect:
             self.cancel_inspect_queue.put(server_host)
             not_inspect = self.cancel_inspect_result_queue.get()
 
-        if self.ssl_inspect and not not_inspect:
+        if self.ssl_config.ssl_inspect and not not_inspect:
             cert_path, key_path = self.generate_certificate(server_host)
             client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
             client_context.load_cert_chain(certfile=cert_path, keyfile=key_path)
@@ -279,7 +272,7 @@ class ProxyHandlers:
                 ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 |
                 ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
             )
-            client_context.load_verify_locations(self.config_inspect_cert)
+            client_context.load_verify_locations(self.ssl_config.inspect_cert)
 
             try:
                 client_socket.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
@@ -308,12 +301,12 @@ class ProxyHandlers:
 
                     full_url = f"https://{server_host}{path}"
 
-                    if not self.no_filter:
+                    if not self.filter_config.no_filter:
                         self.filter_queue.put(f"{server_host}{path}")
                         result = self.filter_result_queue.get()
                         if result[1] == "Blocked":
-                            if not self.no_logging_block:
-                                self.block_logger.info(
+                            if not self.logger_config.no_logging_block:
+                                self.logger_config.block_logger.info(
                                     "%s - %s - %s",
                                     ssl_client_socket.getpeername()[0],
                                     target,
@@ -331,8 +324,8 @@ class ProxyHandlers:
                             ssl_client_socket.close()
                             return
 
-                    if not self.no_logging_access:
-                        self.access_logger.info(
+                    if not self.logger_config.no_logging_access:
+                        self.logger_config.access_logger.info(
                             "%s - %s - %s %s",
                             ssl_client_socket.getpeername()[0],
                             f"https://{server_host}",
@@ -364,8 +357,8 @@ class ProxyHandlers:
                 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 server_socket.connect((server_host, server_port))
                 client_socket.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
-                if not self.no_logging_access:
-                    self.access_logger.info(
+                if not self.logger_config.no_logging_access:
+                    self.logger_config.access_logger.info(
                         "%s - %s - %s",
                         client_socket.getpeername()[0],
                         f"https://{server_host}",
@@ -420,16 +413,16 @@ class ProxyHandlers:
         Returns:
             tuple: Paths to the generated certificate and private key files.
         """
-        cert_path = f"{self.config_inspect_certs_folder}{domain}.pem"
-        key_path = f"{self.config_inspect_certs_folder}{domain}.key"
+        cert_path = f"{self.ssl_config.inspect_certs_folder}{domain}.pem"
+        key_path = f"{self.ssl_config.inspect_certs_folder}{domain}.key"
 
         if not os.path.exists(cert_path):
             key = crypto.PKey()
             key.generate_key(crypto.TYPE_RSA, 2048)
 
-            with open(self.config_inspect_cert, "r", encoding='utf-8') as f:
+            with open(self.ssl_config.inspect_ca_cert, "r", encoding='utf-8') as f:
                 ca_cert = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
-            with open(self.config_inspect_key, "r", encoding='utf-8') as f:
+            with open(self.ssl_config.inspect_ca_key, "r", encoding='utf-8') as f:
                 ca_key = crypto.load_privatekey(crypto.FILETYPE_PEM, f.read())
 
             cert = crypto.X509()

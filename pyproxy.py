@@ -5,9 +5,10 @@ to those URLs. The proxy can handle both HTTP and HTTPS requests, and logs acces
 """
 
 from utils.server import ProxyServer
-from utils.config import parse_args, load_config, get_config_value
+from utils.args import parse_args, load_config, get_config_value
+from utils.config import ProxyConfigLogger, ProxyConfigFilter, ProxyConfigSSL
 
-# pylint: disable=R0914,C0301
+# pylint: disable=C0301
 def main():
     """
     Main entry point of the proxy server. It parses command-line arguments, loads the configuration file, 
@@ -19,43 +20,42 @@ def main():
     host = get_config_value(args, config, 'host', 'Server', "0.0.0.0")
     port = get_config_value(args, config, 'port', 'Server', 8080)
     debug = get_config_value(args, config, 'debug', 'Logging', False)
-    access_log = get_config_value(args, config, 'access_log', 'Logging', "logs/access.log")
-    block_log = get_config_value(args, config, 'block_log', 'Logging', "logs/block.log")
     html_403 = get_config_value(args, config, 'html_403', 'Files', "assets/403.html")
-    no_filter = get_config_value(args, config, 'no_filter', 'Filtering', False)
-    filter_mode = get_config_value(args, config, 'filter_mode', 'Filtering', "local")
-    blocked_sites = get_config_value(args, config, 'blocked_sites', 'Filtering', "config/blocked_sites.txt")
-    blocked_url = get_config_value(args, config, 'blocked_url', 'Filtering', "config/blocked_url.txt")
     shortcuts = get_config_value(args, config, 'shortcuts', 'Options', "config/shortcuts.txt")
     custom_header = get_config_value(args, config, 'custom_header', 'Options', "config/custom_header.json")
-    no_logging_access = get_config_value(args, config, 'no_logging_access', 'Logging', False)
-    no_logging_block = get_config_value(args, config, 'no_logging_block', 'Logging', False)
-    ssl_inspect = get_config_value(args, config, 'ssl_inspect', 'Security', False)
-    inspect_certs_folder = get_config_value(args, config, 'inspect_certs_folder', 'Security', "certs/")
-    inspect_ca_cert = get_config_value(args, config, 'inspect_ca_cert', 'Security', "certs/ca/cert.pem")
-    inspect_ca_key = get_config_value(args, config, 'inspect_ca_key', 'Security', "certs/ca/key.pem")
-    cancel_inspect = get_config_value(args, config, 'cancel_inspect', 'Security', "config/cancel_inspect.txt")
+
+    logger_config = ProxyConfigLogger(
+        access_logger=get_config_value(args, config, 'access_log', 'Logging', "logs/access.log"),
+        block_logger=get_config_value(args, config, 'block_log', 'Logging', "logs/block.log"),
+        no_logging_access=get_config_value(args, config, 'no_logging_access', 'Logging', False),
+        no_logging_block=get_config_value(args, config, 'no_logging_block', 'Logging', False)
+    )
+
+    filter_config = ProxyConfigFilter(
+        no_filter=get_config_value(args, config, 'no_filter', 'Filtering', False),
+        filter_mode=get_config_value(args, config, 'filter_mode', 'Filtering', "local"),
+        blocked_sites=get_config_value(args, config, 'blocked_sites', 'Filtering', "config/blocked_sites.txt"),
+        blocked_url=get_config_value(args, config, 'blocked_url', 'Filtering', "config/blocked_url.txt")
+    )
+
+    ssl_config = ProxyConfigSSL(
+        ssl_inspect=get_config_value(args, config, 'ssl_inspect', 'Security', False),
+        inspect_ca_cert=get_config_value(args, config, 'inspect_ca_cert', 'Security', "certs/ca/cert.pem"),
+        inspect_ca_key=get_config_value(args, config, 'inspect_ca_key', 'Security', "certs/ca/key.pem"),
+        inspect_certs_folder=get_config_value(args, config, 'inspect_certs_folder', 'Security', "certs/"),
+        cancel_inspect=get_config_value(args, config, 'cancel_inspect', 'Security', "config/cancel_inspect.txt")
+    )
 
     proxy = ProxyServer(
         host=host,
         port=port,
         debug=debug,
-        access_log=access_log,
-        block_log=block_log,
+        logger_config=logger_config,
+        filter_config=filter_config,
+        ssl_config=ssl_config,
         html_403=html_403,
-        no_filter=no_filter,
-        filter_mode=filter_mode,
-        no_logging_access=no_logging_access,
-        no_logging_block=no_logging_block,
-        ssl_inspect=ssl_inspect,
-        blocked_sites=blocked_sites,
-        blocked_url=blocked_url,
         shortcuts=shortcuts,
-        custom_header=custom_header,
-        inspect_ca_cert=inspect_ca_cert,
-        inspect_ca_key=inspect_ca_key,
-        inspect_certs_folder=inspect_certs_folder,
-        cancel_inspect=cancel_inspect
+        custom_header=custom_header
     )
 
     proxy.start()

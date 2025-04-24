@@ -35,21 +35,18 @@ class ProxyServer:
         "console_logger", "access_logger", "block_logger",
     }
 
-    def __init__(self, host, port, debug, access_log, block_log,
-                 html_403, no_filter, filter_mode, no_logging_access, no_logging_block, ssl_inspect,
-                 blocked_sites, blocked_url, shortcuts, custom_header, inspect_ca_cert,
-                 inspect_ca_key, inspect_certs_folder, cancel_inspect):
+    def __init__(self, host, port, debug, logger_config, filter_config,
+                 html_403, ssl_config, shortcuts, custom_header):
         """
         Initialize the ProxyServer with configuration parameters.
         """
         self.host_port = (host, port)
         self.debug = debug
         self.html_403 = html_403
-        self.no_filter = no_filter
-        self.filter_mode = filter_mode
-        self.no_logging_access = no_logging_access
-        self.no_logging_block = no_logging_block
-        self.ssl_inspect = ssl_inspect
+
+        self.logger_config = logger_config
+        self.filter_config = filter_config
+        self.ssl_config = ssl_config
 
         # Process communication queues
         self.filter_proc = None
@@ -67,35 +64,33 @@ class ProxyServer:
 
         # Logging
         self.console_logger = configure_console_logger()
-        if not self.no_logging_access:
-            self.access_logger = configure_file_logger(access_log, "AccessLogger")
-        if not self.no_logging_block:
-            self.block_logger = configure_file_logger(block_log, "BlockLogger")
+        if not self.logger_config.no_logging_access:
+            self.logger_config.access_logger = configure_file_logger(
+                self.logger_config.access_logger, "AccessLogger"
+            )
+        if not self.logger_config.no_logging_block:
+            self.logger_config.block_logger = configure_file_logger(
+                self.logger_config.block_logger, "BlockLogger"
+            )
 
         # Configuration files
-        self.config_blocked_sites = blocked_sites
-        self.config_blocked_url = blocked_url
         self.config_shortcuts = shortcuts
         self.config_custom_header = custom_header
-        self.config_cancel_inspect = cancel_inspect
-        self.config_inspect_cert = inspect_ca_cert
-        self.config_inspect_key = inspect_ca_key
-        self.config_inspect_certs_folder = inspect_certs_folder
 
     def _initialize_processes(self):
         """
         Initializes and starts multiple processes for various tasks if their
         respective configurations and conditions are met.
         """
-        if not self.no_filter:
+        if not self.filter_config.no_filter:
             self.filter_proc = multiprocessing.Process(
                 target=filter_process,
                 args=(
                     self.filter_queue,
                     self.filter_result_queue,
-                    self.filter_mode,
-                    self.config_blocked_sites,
-                    self.config_blocked_url
+                    self.filter_config.filter_mode,
+                    self.filter_config.blocked_sites,
+                    self.filter_config.blocked_url
                 )
             )
             self.filter_proc.start()
@@ -113,13 +108,13 @@ class ProxyServer:
             self.shortcuts_proc.start()
             self.console_logger.debug("[*] Starting the shortcuts process...")
 
-        if self.config_cancel_inspect and os.path.isfile(self.config_cancel_inspect):
+        if self.ssl_config.cancel_inspect and os.path.isfile(self.ssl_config.cancel_inspect):
             self.cancel_inspect_proc = multiprocessing.Process(
                 target=cancel_inspect_process,
                 args=(
                     self.cancel_inspect_queue,
                     self.cancel_inspect_result_queue,
-                    self.config_cancel_inspect
+                    self.ssl_config.cancel_inspect
                 )
             )
             self.cancel_inspect_proc.start()
@@ -141,9 +136,9 @@ class ProxyServer:
         """
         Delete old inspection cert/key files if they exist.
         """
-        for file in os.listdir(self.config_inspect_certs_folder):
+        for file in os.listdir(self.ssl_config.inspect_certs_folder):
             if file.endswith((".key", ".pem")):
-                file_path = os.path.join(self.config_inspect_certs_folder, file)
+                file_path = os.path.join(self.ssl_config.inspect_certs_folder, file)
                 try:
                     os.remove(file_path)
                 except (FileNotFoundError, PermissionError, OSError) as e:
@@ -162,13 +157,13 @@ class ProxyServer:
                 if key not in self._EXCLUDE_DEBUG_KEYS:
                     self.console_logger.debug("[*] %s = %s", key, getattr(self, key))
 
-        if self.ssl_inspect and not os.path.exists(self.config_inspect_certs_folder):
-            os.makedirs(self.config_inspect_certs_folder)
+        if self.ssl_config.ssl_inspect and not os.path.exists(self.ssl_config.inspect_certs_folder):
+            os.makedirs(self.ssl_config.inspect_certs_folder)
         else:
             self._clean_inspection_folder()
 
-        if self.filter_mode == "local":
-            for file in [self.config_blocked_sites, self.config_blocked_url]:
+        if self.filter_config.filter_mode == "local":
+            for file in [self.filter_config.blocked_sites, self.filter_config.blocked_url]:
                 if not os.path.exists(file):
                     with open(file, "w", encoding='utf-8'):
                         pass
@@ -186,10 +181,9 @@ class ProxyServer:
                 self.console_logger.debug("Connection from %s", addr)
                 client = ProxyHandlers(
                     html_403=self.html_403,
-                    no_filter=self.no_filter,
-                    no_logging_access=self.no_logging_access,
-                    no_logging_block=self.no_logging_block,
-                    ssl_inspect=self.ssl_inspect,
+                    logger_config=self.logger_config,
+                    filter_config=self.filter_config,
+                    ssl_config=self.ssl_config,
                     filter_queue=self.filter_queue,
                     filter_result_queue=self.filter_result_queue,
                     shortcuts_queue=self.shortcuts_queue,
@@ -200,12 +194,7 @@ class ProxyServer:
                     custom_header_result_queue=self.custom_header_result_queue,
                     console_logger=self.console_logger,
                     shortcuts=self.config_shortcuts,
-                    custom_header=self.config_custom_header,
-                    inspect_cert=self.config_inspect_cert,
-                    inspect_key=self.config_inspect_key,
-                    inspect_certs_folder=self.config_inspect_certs_folder,
-                    access_logger=self.access_logger,
-                    block_logger=self.block_logger
+                    custom_header=self.config_custom_header
                 )
                 client_handler = threading.Thread(
                     target=client.handle_client,
