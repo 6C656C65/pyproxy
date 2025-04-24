@@ -17,7 +17,7 @@ import unittest
 import multiprocessing
 import time
 from unittest.mock import patch, mock_open
-from utils.filter import load_blacklist, filter_process
+from utils.proxy.filter import load_blacklist, filter_process
 
 class TestFilter(unittest.TestCase):
     """

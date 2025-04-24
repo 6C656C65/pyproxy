@@ -1,202 +1,50 @@
 """
-proxy.py
+handlers.py
 
-This module implements a simple Python-based proxy server that handles both HTTP and HTTPS requests.
-It forwards requests to the target server, checks URLs against a blocklist,
-and serves custom 403 pages for blocked sites. The server also logs access and blocked 
-requests to specified log files.
-
-Classes:
-- ProxyServer: A class that defines the proxy server. It listens for incoming connections,
-processes requests, forwards them to the target server, and logs events.
+This module defines the ProxyHandlers class used by the proxy server to process
+HTTP and HTTPS client connections. It handles request forwarding, blocking, shortcut
+redirection, custom headers, and optional SSL inspection.
 """
 
 import socket
 import select
-import threading
-import logging
-import multiprocessing
 import os
 import ssl
 from OpenSSL import crypto
 
-from utils.filter import filter_process
-from utils.shortcuts import shortcuts_process
-from utils.cancel_inspect import cancel_inspect_process
-from utils.custom_header import custom_header_process
-from utils.logger import configure_file_logger, configure_console_logger
-
-class ProxyServer:
+# pylint: disable=R0914
+class ProxyHandlers:
     """
-    A simple Python-based proxy server that handles HTTP and HTTPS requests. 
-    It forwards requests to the target server, filters URLs, and blocks access to 
-    certain sites based on a configured list.
-    The server logs access and blocked requests to specified log files.
+    ProxyHandlers manages client connections for a proxy server,
+    handling both HTTP and HTTPS requests. It processes request forwarding,
+    blocking, SSL inspection, and custom headers based on configuration settings.
     """
-    # pylint: disable=too-many-locals
-    def __init__(self, host, port, debug, access_log, block_log,
-                 html_403, no_filter, filter_mode, no_logging_access, no_logging_block, ssl_inspect,
-                 blocked_sites, blocked_url, shortcuts, custom_header, inspect_ca_cert,
-                 inspect_ca_key, inspect_certs_folder, cancel_inspect):
-        """
-        Initializes the ProxyServer instance with the provided configurations.
-        """
-        self.host_port = (host, port)
-        self.debug = debug
+    def __init__(self, html_403, no_filter, no_logging_access, no_logging_block, ssl_inspect,
+                 filter_queue, filter_result_queue, shortcuts_queue, shortcuts_result_queue,
+                 cancel_inspect_queue, cancel_inspect_result_queue, custom_header_queue,
+                 custom_header_result_queue, console_logger, shortcuts, custom_header, inspect_cert,
+                 inspect_key, inspect_certs_folder, access_logger, block_logger):
         self.html_403 = html_403
         self.no_filter = no_filter
-        self.filter_mode = filter_mode
         self.no_logging_access = no_logging_access
         self.no_logging_block = no_logging_block
         self.ssl_inspect = ssl_inspect
-        self.filter_proc = None
-        self.filter_queue = multiprocessing.Queue()
-        self.filter_result_queue = multiprocessing.Queue()
-        self.shortcuts_proc = None
-        self.shortcuts_queue = multiprocessing.Queue()
-        self.shortcuts_result_queue = multiprocessing.Queue()
-        self.cancel_inspect_proc = None
-        self.cancel_inspect_queue = multiprocessing.Queue()
-        self.cancel_inspect_result_queue = multiprocessing.Queue()
-        self.custom_header_proc = None
-        self.custom_header_queue = multiprocessing.Queue()
-        self.custom_header_result_queue = multiprocessing.Queue()
-        self.console_logger = configure_console_logger()
-        self.config_blocked_sites = blocked_sites
-        self.config_blocked_url = blocked_url
+        self.filter_queue = filter_queue
+        self.filter_result_queue = filter_result_queue
+        self.shortcuts_queue = shortcuts_queue
+        self.shortcuts_result_queue = shortcuts_result_queue
+        self.cancel_inspect_queue = cancel_inspect_queue
+        self.cancel_inspect_result_queue = cancel_inspect_result_queue
+        self.custom_header_queue = custom_header_queue
+        self.custom_header_result_queue = custom_header_result_queue
+        self.console_logger = console_logger
         self.config_shortcuts = shortcuts
         self.config_custom_header = custom_header
-        self.config_cancel_inspect = cancel_inspect
-        self.config_inspect_cert = inspect_ca_cert
-        self.config_inspect_key = inspect_ca_key
+        self.config_inspect_cert = inspect_cert
+        self.config_inspect_key = inspect_key
         self.config_inspect_certs_folder = inspect_certs_folder
-        if not self.no_logging_access:
-            self.access_logger = configure_file_logger(access_log, "AccessLogger")
-        if not self.no_logging_block:
-            self.block_logger = configure_file_logger(block_log, "BlockLogger")
-
-    # pylint: disable=too-many-branches, too-many-statements
-    def start(self):
-        """
-        Starts the proxy server, initializes the filtering process if enabled,
-        and begins listening for incoming client connections.
-        It creates a socket server and manages client threads.
-        """
-        if self.debug:
-            self.console_logger.setLevel(logging.DEBUG)
-            self.console_logger.debug("Configuration used :")
-            self.console_logger.debug("[*] Host, Port = %s", self.host_port)
-            self.console_logger.debug("[*] debug = %s", self.debug)
-            self.console_logger.debug("[*] html_403 = %s", self.html_403)
-            self.console_logger.debug("[*] no_filter = %s", self.no_filter)
-            self.console_logger.debug("[*] filter_mode = %s", self.filter_mode)
-            self.console_logger.debug("[*] no_logging_access = %s", self.no_logging_access)
-            self.console_logger.debug("[*] no_logging_block = %s", self.no_logging_block)
-            self.console_logger.debug("[*] ssl_inspect = %s", self.ssl_inspect)
-            self.console_logger.debug("[*] blocked_sites = %s", self.config_blocked_sites)
-            self.console_logger.debug("[*] blocked_url = %s", self.config_blocked_url)
-            self.console_logger.debug("[*] shortcuts = %s", self.config_shortcuts)
-            self.console_logger.debug("[*] custom_header = %s", self.config_custom_header)
-            self.console_logger.debug("[*] inspect_ca_cert = %s", self.config_inspect_cert)
-            self.console_logger.debug("[*] inspect_ca_key = %s", self.config_inspect_key)
-            self.console_logger.debug(
-                "[*] inspect_certs_folder = %s",
-                self.config_inspect_certs_folder
-            )
-        else:
-            self.console_logger.setLevel(logging.INFO)
-
-        if not os.path.exists(self.config_inspect_certs_folder):
-            if self.ssl_inspect:
-                os.makedirs(self.config_inspect_certs_folder)
-        else:
-            for file in os.listdir(self.config_inspect_certs_folder):
-                if file.endswith(".key") or file.endswith(".pem"):
-                    file_path = os.path.join(self.config_inspect_certs_folder, file)
-                    try:
-                        os.remove(file_path)
-                    except FileNotFoundError:
-                        self.console_logger.debug("File not found: %s", file_path)
-                    except PermissionError:
-                        self.console_logger.debug("Permission denied: %s", file_path)
-                    except OSError as e:
-                        self.console_logger.debug("OS error deleting %s: %s", file_path, e)
-
-        if self.filter_mode == "local":
-            if not os.path.exists(self.config_blocked_sites):
-                with open(self.config_blocked_sites, "w", encoding='utf-8'):
-                    pass
-            if not os.path.exists(self.config_blocked_url):
-                with open(self.config_blocked_url, "w", encoding='utf-8'):
-                    pass
-
-        if not self.no_filter:
-            self.filter_proc = multiprocessing.Process(
-                target=filter_process,
-                args=(
-                    self.filter_queue,
-                    self.filter_result_queue,
-                    self.filter_mode,
-                    self.config_blocked_sites,
-                    self.config_blocked_url
-                )
-            )
-            self.filter_proc.start()
-            self.console_logger.debug("[*] Starting the filter process...")
-
-        if self.config_shortcuts and os.path.isfile(self.config_shortcuts):
-            self.shortcuts_proc = multiprocessing.Process(
-                target=shortcuts_process,
-                args=(
-                    self.shortcuts_queue,
-                    self.shortcuts_result_queue,
-                    self.config_shortcuts
-                )
-            )
-            self.shortcuts_proc.start()
-            self.console_logger.debug("[*] Starting the shortcuts process...")
-
-        if self.config_cancel_inspect and os.path.isfile(self.config_cancel_inspect):
-            self.cancel_inspect_proc = multiprocessing.Process(
-                target=cancel_inspect_process,
-                args=(
-                    self.cancel_inspect_queue,
-                    self.cancel_inspect_result_queue,
-                    self.config_cancel_inspect
-                )
-            )
-            self.cancel_inspect_proc.start()
-            self.console_logger.debug("[*] Starting the cancel inspection process...")
-
-        if self.config_custom_header and os.path.isfile(self.config_custom_header):
-            self.custom_header_proc = multiprocessing.Process(
-                target=custom_header_process,
-                args=(
-                    self.custom_header_queue,
-                    self.custom_header_result_queue,
-                    self.config_custom_header
-                )
-            )
-            self.custom_header_proc.start()
-            self.console_logger.debug("[*] Starting the custom header process...")
-
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.bind(self.host_port)
-        server.listen(10)
-
-        self.console_logger.info("Proxy server started on %s...", self.host_port)
-
-        try:
-            while True:
-                client_socket, addr = server.accept()
-                self.console_logger.debug("Connection from %s", addr)
-                client_handler = threading.Thread(
-                    target=self.handle_client,
-                    args=(client_socket,)
-                )
-                client_handler.start()
-        except KeyboardInterrupt:
-            self.console_logger.info("Proxy interrupted, shutting down.")
+        self.access_logger = access_logger
+        self.block_logger = block_logger
 
     def handle_client(self, client_socket):
         """
@@ -236,7 +84,6 @@ class ProxyServer:
             self.custom_header_queue.put(url)
             new_headers = self.custom_header_result_queue.get()
             headers.update(new_headers)
-            print("headers", headers)
 
         if self.config_shortcuts:
             domain, _ = self.parse_url(url)
