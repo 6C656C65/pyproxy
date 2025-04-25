@@ -224,6 +224,7 @@ def start_flask_server(proxy_server: 'ProxyServer', flask_port, flask_pass, debu
     def verify_password(username, password):
         if username in users and check_password_hash(users.get(username), password):
             return username
+        return None
 
     app = Flask(__name__, static_folder='static')
     if not debug:
