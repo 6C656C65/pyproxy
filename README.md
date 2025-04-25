@@ -37,6 +37,7 @@
 - Shortcuts
 - Cancel inspection on bank site
 - Custom header
+- Web interface monitoring (actives connections, processes status)
 
 ## 📦 **Installation**
 
@@ -85,7 +86,6 @@ If you encounter any problems, or if you want to use the program in a particular
 - Adding ACL
 - Proxy authentication
 - Benchmark
-- Admin mode, statistiques and real time request
 - Image slim wihtout admin interface
 - Fix HSTS
 

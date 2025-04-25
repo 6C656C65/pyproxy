@@ -28,3 +28,7 @@ inspect_ca_cert = certs/ca/cert.pem
 inspect_ca_key = certs/ca/key.pem
 inspect_certs_folder = certs/
 cancel_inspect = config/cancel_inspect.txt
+
+[Monitoring]
+flask_port = 5000
+flask_pass = password

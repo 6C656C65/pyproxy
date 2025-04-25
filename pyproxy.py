@@ -23,6 +23,8 @@ def main():
     html_403 = get_config_value(args, config, 'html_403', 'Files', "assets/403.html")
     shortcuts = get_config_value(args, config, 'shortcuts', 'Options', "config/shortcuts.txt")
     custom_header = get_config_value(args, config, 'custom_header', 'Options', "config/custom_header.json")
+    flask_port = get_config_value(args, config, 'flask_port', 'Monitoring', 5000)
+    flask_pass = get_config_value(args, config, 'flask_pass', 'Monitoring', "password")
 
     logger_config = ProxyConfigLogger(
         access_logger=get_config_value(args, config, 'access_log', 'Logging', "logs/access.log"),
@@ -53,6 +55,8 @@ def main():
         logger_config=logger_config,
         filter_config=filter_config,
         ssl_config=ssl_config,
+        flask_port=flask_port,
+        flask_pass=flask_pass,
         html_403=html_403,
         shortcuts=shortcuts,
         custom_header=custom_header

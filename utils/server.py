@@ -1,5 +1,5 @@
 """
-proxy.py
+server.py
 
 This module defines a Python-based proxy server capable of handling both HTTP
 and HTTPS requests. It forwards client requests to target servers, applies
@@ -12,12 +12,14 @@ import threading
 import logging
 import multiprocessing
 import os
+import time
 
 from utils.handlers import ProxyHandlers
 from utils.proxy.filter import filter_process
 from utils.proxy.shortcuts import shortcuts_process
 from utils.proxy.cancel_inspect import cancel_inspect_process
 from utils.proxy.custom_header import custom_header_process
+from utils.proxy.monitoring import start_flask_server
 from utils.logger import configure_file_logger, configure_console_logger
 
 # pylint: disable=too-few-public-methods,too-many-locals
@@ -36,17 +38,23 @@ class ProxyServer:
     }
 
     def __init__(self, host, port, debug, logger_config, filter_config,
-                 html_403, ssl_config, shortcuts, custom_header):
+                 html_403, ssl_config, shortcuts, custom_header,
+                 flask_port, flask_pass):
         """
         Initialize the ProxyServer with configuration parameters.
         """
         self.host_port = (host, port)
         self.debug = debug
         self.html_403 = html_403
+        self.active_connections = {}
 
         self.logger_config = logger_config
         self.filter_config = filter_config
         self.ssl_config = ssl_config
+
+        # Monitoring
+        self.flask_port = flask_port
+        self.flask_pass = flask_pass
 
         # Process communication queues
         self.filter_proc = None
@@ -170,6 +178,14 @@ class ProxyServer:
 
         self._initialize_processes()
 
+        flask_thread = threading.Thread(
+            target=start_flask_server,
+            args=(self,self.flask_port,self.flask_pass,self.debug),
+            daemon=True
+        )
+        flask_thread.start()
+        self.console_logger.debug("[*] Starting the monitoring process...")
+
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind(self.host_port)
         server.listen(10)
@@ -194,12 +210,23 @@ class ProxyServer:
                     custom_header_result_queue=self.custom_header_result_queue,
                     console_logger=self.console_logger,
                     shortcuts=self.config_shortcuts,
-                    custom_header=self.config_custom_header
+                    custom_header=self.config_custom_header,
+                    active_connections=self.active_connections
                 )
                 client_handler = threading.Thread(
                     target=client.handle_client,
-                    args=(client_socket,)
+                    args=(client_socket,),
+                    daemon=True
                 )
                 client_handler.start()
+                client_ip, client_port = addr
+                self.active_connections[client_handler.ident] = {
+                    'client_ip': client_ip,
+                    'client_port': client_port,
+                    'start_time': time.time(),
+                    'bytes_sent': 0,
+                    'bytes_received': 0,
+                    'thread_name': client_handler.name
+                }
         except KeyboardInterrupt:
             self.console_logger.info("Proxy interrupted, shutting down.")

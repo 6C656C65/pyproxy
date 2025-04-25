@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Proxy Monitoring</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
+</head>
+<body>
+    <div class="container">
+        <h1>
+            <img src="{{ url_for('static', filename='favicon.png') }}" alt="icon" class="favicon">
+            PyProxy Monitoring
+        </h1>
+
+        <div class="grid">
+            <div class="left-column">
+                <div id="status-section" class="section">Loading...</div>
+                <div id="subprocesses-section" class="section"></div>
+            </div>
+            <div class="right-column">
+                <div id="connections-section" class="section"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchMonitoringData() {
+            try {
+                const response = await fetch('/monitoring');
+                const data = await response.json();
+
+                // Main process
+                document.getElementById('status-section').innerHTML = `
+                    <h2>Main Process</h2>
+                    <p><strong>Name:</strong> ${data.name}</p>
+                    <p><strong>PID:</strong> ${data.pid}</p>
+                    <p><strong>Status:</strong> <span class="badge ${data.status}">${data.status}</span></p>
+                    <p><strong>Start Time:</strong> ${data.start_time}</p>
+                `;
+
+                // Subprocesses
+                document.getElementById('subprocesses-section').innerHTML = `
+                    <h2>Subprocesses</h2>
+                    ${Object.values(data.subprocesses).map(proc => `
+                        <div class="subprocess">
+                            <h3>${proc.name}</h3>
+                            <p><strong>PID:</strong> ${proc.pid}</p>
+                            <p><strong>Status:</strong> <span class="badge ${proc.status}">${proc.status}</span></p>
+                            <ul>${proc.threads.map(t => `<li>${t.name} (${t.thread_id})</li>`).join('')}</ul>
+                        </div>
+                    `).join('')}
+                `;
+
+                // Active connections
+                document.getElementById('connections-section').innerHTML = `
+                    <h2>Active Connections</h2>
+                    ${data.active_connections.length === 0
+                        ? '<p>No active connections.</p>'
+                        : data.active_connections.map(conn => `
+                            <div class="connection">
+                                <p><strong>Client:</strong> ${conn.client_ip}:${conn.client_port}</p>
+                                <p><strong>Target:</strong> ${conn.target_ip}:${conn.target_port}</p>
+                                <p><strong>Sent:</strong> ${conn.bytes_sent} bytes</p>
+                                <p><strong>Received:</strong> ${conn.bytes_received} bytes</p>
+                            </div>
+                        `).join('')}
+                `;
+            } catch (err) {
+                console.error('Error loading data:', err);
+            }
+        }
+
+        fetchMonitoringData();
+        setInterval(fetchMonitoringData, 5000);
+    </script>
+</body>
+</html>

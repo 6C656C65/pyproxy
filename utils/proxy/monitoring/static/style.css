@@ -1,0 +1,72 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f2f2f2;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 0 10px #ccc;
+}
+
+h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #0066cc;
+    font-size: 28px;
+    margin-bottom: 30px;
+}
+
+.favicon {
+    width: 32px;
+    height: 32px;
+}
+
+.grid {
+    display: flex;
+    gap: 30px;
+}
+
+.left-column, .right-column {
+    flex: 1;
+}
+
+.section {
+    margin-bottom: 30px;
+}
+
+.section h2 {
+    color: #444;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
+}
+
+.subprocess, .connection {
+    background: #f9f9f9;
+    margin: 10px 0;
+    padding: 10px;
+    border-left: 5px solid #0066cc;
+    border-radius: 4px;
+}
+
+.badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+    color: white;
+}
+
+.badge.running {
+    background: green;
+}
+
+.badge.stopped {
+    background: red;
+}

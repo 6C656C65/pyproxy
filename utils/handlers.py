@@ -10,6 +10,7 @@ import socket
 import select
 import os
 import ssl
+import threading
 from OpenSSL import crypto
 
 # pylint: disable=R0914
@@ -22,7 +23,8 @@ class ProxyHandlers:
     def __init__(self, html_403, logger_config, filter_config, ssl_config,
                  filter_queue, filter_result_queue, shortcuts_queue, shortcuts_result_queue,
                  cancel_inspect_queue, cancel_inspect_result_queue, custom_header_queue,
-                 custom_header_result_queue, console_logger, shortcuts, custom_header):
+                 custom_header_result_queue, console_logger, shortcuts, custom_header,
+                 active_connections):
         self.html_403 = html_403
         self.logger_config = logger_config
         self.filter_config = filter_config
@@ -38,6 +40,7 @@ class ProxyHandlers:
         self.console_logger = console_logger
         self.config_shortcuts = shortcuts
         self.config_custom_header = custom_header
+        self.active_connections = active_connections
 
     def handle_client(self, client_socket):
         """
@@ -51,6 +54,7 @@ class ProxyHandlers:
         if not request:
             self.console_logger.debug("No request received, closing connection.")
             client_socket.close()
+            self.active_connections.pop(threading.get_ident(), None)
             return
 
         first_line = request.decode(errors='ignore').split("\n")[0]
@@ -92,6 +96,7 @@ class ProxyHandlers:
 
                 client_socket.sendall(response.encode())
                 client_socket.close()
+                self.active_connections.pop(threading.get_ident(), None)
                 return
 
         if not self.filter_config.no_filter:
@@ -115,6 +120,7 @@ class ProxyHandlers:
                 )
                 client_socket.sendall(response.encode())
                 client_socket.close()
+                self.active_connections.pop(threading.get_ident(), None)
                 return
         server_host, _ = self.parse_url(url)
         if not self.logger_config.no_logging_access:
@@ -139,7 +145,6 @@ class ProxyHandlers:
 
             modified_request = f"{request_line}\r\n{reconstructed_headers}\r\n\r\n{body}".encode()
 
-            # 5. Envoyer au serveur
             self.forward_request_to_server(client_socket, modified_request, url)
 
         else:
@@ -155,16 +160,23 @@ class ProxyHandlers:
             url (str): The target URL from the HTTP request.
         """
         server_host, server_port = self.parse_url(url)
+        thread_id = threading.get_ident()
+
+        if thread_id in self.active_connections:
+            self.active_connections[thread_id]["target_ip"] = server_host
+            self.active_connections[thread_id]["target_port"] = server_port
 
         try:
             server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             server_socket.connect((server_host, server_port))
             server_socket.sendall(request)
+            self.active_connections[thread_id]["bytes_sent"] += len(request)
 
             while True:
                 response = server_socket.recv(4096)
                 if len(response) > 0:
                     client_socket.send(response)
+                    self.active_connections[thread_id]["bytes_received"] += len(response)
                 else:
                     break
         except (socket.timeout, socket.gaierror, ConnectionRefusedError, OSError) as e:
@@ -177,6 +189,11 @@ class ProxyHandlers:
             )
             client_socket.sendall(response.encode())
             client_socket.close()
+            self.active_connections.pop(thread_id, None)
+        finally:
+            client_socket.close()
+            server_socket.close()
+            self.active_connections.pop(thread_id, None)
 
     def parse_url(self, url):
         """
@@ -257,6 +274,7 @@ class ProxyHandlers:
                 )
                 client_socket.sendall(response.encode())
                 client_socket.close()
+                self.active_connections.pop(threading.get_ident(), None)
                 return
 
         not_inspect = False
@@ -322,6 +340,7 @@ class ProxyHandlers:
                             )
                             ssl_client_socket.sendall(response.encode())
                             ssl_client_socket.close()
+                            self.active_connections.pop(threading.get_ident(), None)
                             return
 
                     if not self.logger_config.no_logging_access:
@@ -351,6 +370,7 @@ class ProxyHandlers:
                 self.console_logger.error("Socket error: %s", str(e))
             finally:
                 client_socket.close()
+                self.active_connections.pop(threading.get_ident(), None)
 
         else:
             try:
@@ -385,6 +405,19 @@ class ProxyHandlers:
             server_socket (socket): The socket object for the server connection.
         """
         sockets = [client_socket, server_socket]
+        thread_id = threading.get_ident()
+
+        if (
+            thread_id in self.active_connections and
+            "target_ip" not in self.active_connections[thread_id]
+        ):
+            try:
+                target_ip, target_port = server_socket.getpeername()
+                self.active_connections[thread_id]["target_ip"] = target_ip
+                self.active_connections[thread_id]["target_port"] = target_port
+            except OSError as e:
+                self.console_logger.debug("Could not get peer name: %s", e)
+
         try:
             while True:
                 readable, _, _ = select.select(sockets, [], [], 1)
@@ -394,14 +427,18 @@ class ProxyHandlers:
                         self.console_logger.debug("Closing connection.")
                         client_socket.close()
                         server_socket.close()
+                        self.active_connections.pop(threading.get_ident(), None)
                         return
                     if sock is client_socket:
                         server_socket.sendall(data)
+                        self.active_connections[thread_id]["bytes_sent"] += len(data)
                     else:
                         client_socket.sendall(data)
+                        self.active_connections[thread_id]["bytes_received"] += len(data)
         except (socket.error, OSError):
             client_socket.close()
             server_socket.close()
+            self.active_connections.pop(threading.get_ident(), None)
 
     def generate_certificate(self, domain):
         """

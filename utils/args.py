@@ -46,6 +46,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--inspect-ca-key", type=str, help="Path to the CA key")
     parser.add_argument("--inspect-certs-folder", type=str, help="Path to the generated certificates folder")
     parser.add_argument("--cancel-inspect", type=str, help="Path to the text file containing the list of URLs without ssl inspection")
+    parser.add_argument("--flask-port", type=int, help="Port to listen on for monitoring interface")
+    parser.add_argument("--flask-pass", type=int, help="Default password to Flask interface")
 
     return parser.parse_args()
 
