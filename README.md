@@ -38,6 +38,7 @@
 - Cancel inspection on bank site
 - Custom header
 - Web interface monitoring (actives connections, processes status)
+- Docker image slim wihtout (moniting, custom header & shortcuts)
 
 ## 📦 **Installation**
 
@@ -86,7 +87,6 @@ If you encounter any problems, or if you want to use the program in a particular
 - Adding ACL
 - Proxy authentication
 - Benchmark
-- Image slim wihtout admin interface
 - Fix HSTS
 
 ---

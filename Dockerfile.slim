@@ -1,0 +1,21 @@
+FROM python:3.13-slim as builder
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+
+# Remove features
+RUN rm -r utils/proxy/monitoring
+RUN rm utils/proxy/custom_header.py
+RUN rm utils/proxy/shortcuts.py
+
+RUN chmod -R 777 /app/logs
+RUN chmod -R 777 /app/config
+
+
+FROM gcr.io/distroless/python3-debian12:nonroot
+WORKDIR /app
+COPY --from=builder /usr/local /usr/local
+COPY --from=builder /app /app
+EXPOSE 8080
+ENTRYPOINT ["python3", "pyproxy.py"]

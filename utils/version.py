@@ -9,4 +9,11 @@ Constants:
   formatted as "major.minor.patch".
 """
 
+import os
+
 __version__ = "0.3.0"
+
+if os.path.isdir("utils/proxy/monitoring"):
+    __slim__ = False
+else:
+    __slim__ = True

@@ -14,13 +14,17 @@ import multiprocessing
 import os
 import time
 
+from utils.version import __slim__
 from utils.handlers import ProxyHandlers
 from utils.proxy.filter import filter_process
-from utils.proxy.shortcuts import shortcuts_process
 from utils.proxy.cancel_inspect import cancel_inspect_process
-from utils.proxy.custom_header import custom_header_process
-from utils.proxy.monitoring import start_flask_server
 from utils.logger import configure_file_logger, configure_console_logger
+if not __slim__:
+    from utils.proxy.shortcuts import shortcuts_process
+if not __slim__:
+    from utils.proxy.custom_header import custom_header_process
+if not __slim__:
+    from utils.proxy.monitoring import start_flask_server
 
 # pylint: disable=too-few-public-methods,too-many-locals
 class ProxyServer:
@@ -104,7 +108,8 @@ class ProxyServer:
             self.filter_proc.start()
             self.console_logger.debug("[*] Starting the filter process...")
 
-        if self.config_shortcuts and os.path.isfile(self.config_shortcuts):
+        # pylint: disable=E0606
+        if not __slim__ and self.config_shortcuts and os.path.isfile(self.config_shortcuts):
             self.shortcuts_proc = multiprocessing.Process(
                 target=shortcuts_process,
                 args=(
@@ -128,7 +133,8 @@ class ProxyServer:
             self.cancel_inspect_proc.start()
             self.console_logger.debug("[*] Starting the cancel inspection process...")
 
-        if self.config_custom_header and os.path.isfile(self.config_custom_header):
+        # pylint: disable=E0606
+        if not __slim__ and self.config_custom_header and os.path.isfile(self.config_custom_header):
             self.custom_header_proc = multiprocessing.Process(
                 target=custom_header_process,
                 args=(
@@ -178,13 +184,14 @@ class ProxyServer:
 
         self._initialize_processes()
 
-        flask_thread = threading.Thread(
-            target=start_flask_server,
-            args=(self,self.flask_port,self.flask_pass,self.debug),
-            daemon=True
-        )
-        flask_thread.start()
-        self.console_logger.debug("[*] Starting the monitoring process...")
+        if not __slim__:
+            flask_thread = threading.Thread(
+                target=start_flask_server,
+                args=(self,self.flask_port,self.flask_pass,self.debug),
+                daemon=True
+            )
+            flask_thread.start()
+            self.console_logger.debug("[*] Starting the monitoring process...")
 
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind(self.host_port)
