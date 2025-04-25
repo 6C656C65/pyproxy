@@ -54,6 +54,7 @@ pip install -r requirements.txt
 docker pull ghcr.io/6c656c65/pyproxy:latest
 docker run -d ghcr.io/6c656c65/pyproxy:latest
 ```
+You can use slim images by adding `-slim` to the end of the tags
 
 ## 🚀 **Usage**
 

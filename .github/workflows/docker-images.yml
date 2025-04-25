@@ -51,7 +51,7 @@ jobs:
 
       - name: Push Docker image
         run: |
-          docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}
-          docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest
           docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}-slim
           docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest-slim
+          docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}
+          docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest
