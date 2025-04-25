@@ -9,17 +9,28 @@ class ProxyConfigLogger:
     """
     Handles logging configuration for the proxy.
     """
-    def __init__(self, access_logger, block_logger, no_logging_access, no_logging_block):
-        self.access_logger = access_logger
-        self.block_logger = block_logger
+    def __init__(self, access_log, block_log, no_logging_access, no_logging_block):
+        self.access_log = access_log
+        self.block_log = block_log
+        self.access_logger = None
+        self.block_logger = None
         self.no_logging_access = no_logging_access
         self.no_logging_block = no_logging_block
 
     def __repr__(self):
-        return (f"ProxyConfigLogger(access_logger={self.access_logger}, "
-                f"block_logger={self.block_logger}, "
+        return (f"ProxyConfigLogger(access_log={self.access_log}, "
+                f"block_log={self.block_log}, "
                 f"no_logging_access={self.no_logging_access}, "
                 f"no_logging_block={self.no_logging_block})")
+
+
+    def to_dict(self):
+        return {
+            'access_log': self.access_log,
+            'block_log': self.block_log,
+            'no_logging_access': self.no_logging_access,
+            'no_logging_block': self.no_logging_block
+        }
 
 class ProxyConfigFilter:
     """
@@ -36,6 +47,14 @@ class ProxyConfigFilter:
                 f"filter_mode='{self.filter_mode}', "
                 f"blocked_sites={self.blocked_sites}, "
                 f"blocked_url={self.blocked_url})")
+
+    def to_dict(self):
+        return {
+            'no_filter': self.no_filter,
+            'filter_mode': self.filter_mode,
+            'blocked_sites': self.blocked_sites,
+            'blocked_url': self.blocked_url
+        }
 
 class ProxyConfigSSL:
     """
@@ -55,3 +74,12 @@ class ProxyConfigSSL:
                 f"inspect_ca_key='{self.inspect_ca_key}', "
                 f"inspect_certs_folder='{self.inspect_certs_folder}', "
                 f"cancel_inspect={self.cancel_inspect})")
+
+    def to_dict(self):
+        return {
+            'ssl_inspect': self.ssl_inspect,
+            'inspect_ca_cert': self.inspect_ca_cert,
+            'inspect_ca_key': self.inspect_ca_key,
+            'inspect_certs_folder': self.inspect_certs_folder,
+            'cancel_inspect': self.cancel_inspect
+        }

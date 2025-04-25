@@ -27,8 +27,8 @@ def main():
     flask_pass = get_config_value(args, config, 'flask_pass', 'Monitoring', "password")
 
     logger_config = ProxyConfigLogger(
-        access_logger=get_config_value(args, config, 'access_log', 'Logging', "logs/access.log"),
-        block_logger=get_config_value(args, config, 'block_log', 'Logging', "logs/block.log"),
+        access_log=get_config_value(args, config, 'access_log', 'Logging', "logs/access.log"),
+        block_log=get_config_value(args, config, 'block_log', 'Logging', "logs/block.log"),
         no_logging_access=get_config_value(args, config, 'no_logging_access', 'Logging', False),
         no_logging_block=get_config_value(args, config, 'no_logging_block', 'Logging', False)
     )

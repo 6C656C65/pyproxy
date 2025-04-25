@@ -70,3 +70,42 @@ h1 {
 .badge.stopped {
     background: red;
 }
+
+.badge.small {
+    font-size: 0.6em;
+    padding: 2px 4px;
+}
+
+#config-section {
+    background: #f4f4f4;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 0 5px #ccc;
+}
+
+#config-section h3 {
+    color: #0066cc;
+}
+
+.checkmark {
+    font-weight: bold;
+    color: green;
+}
+
+.checkmark.false {
+    color: red;
+}
+
+.path {
+    display: inline-block;
+    background-color: #e9ecef;
+    padding: 4px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    max-width: 90%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+    font-style: italic;
+}

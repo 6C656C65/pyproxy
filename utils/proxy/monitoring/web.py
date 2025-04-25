@@ -254,4 +254,19 @@ def start_flask_server(proxy_server: 'ProxyServer', flask_port, flask_pass, debu
         monitor = ProxyMonitor(proxy_server)
         return jsonify(monitor.get_process_info())
 
+    @app.route('/config', methods=['GET'])
+    @auth.login_required
+    def config():
+        config_data = {
+            'host': proxy_server.host_port[0],
+            'port': proxy_server.host_port[1],
+            'debug': proxy_server.debug,
+            'html_403': proxy_server.html_403,
+            'logger_config': proxy_server.logger_config.to_dict() if proxy_server.logger_config else None,
+            'filter_config': proxy_server.filter_config.to_dict() if proxy_server.filter_config else None,
+            'ssl_config': proxy_server.ssl_config.to_dict() if proxy_server.ssl_config else None,
+            'flask_port': proxy_server.flask_port
+        }
+        return jsonify(config_data)
+
     app.run(host='0.0.0.0', port=flask_port) # nosec

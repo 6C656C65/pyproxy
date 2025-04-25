@@ -78,11 +78,11 @@ class ProxyServer:
         self.console_logger = configure_console_logger()
         if not self.logger_config.no_logging_access:
             self.logger_config.access_logger = configure_file_logger(
-                self.logger_config.access_logger, "AccessLogger"
+                self.logger_config.access_log, "AccessLogger"
             )
         if not self.logger_config.no_logging_block:
             self.logger_config.block_logger = configure_file_logger(
-                self.logger_config.block_logger, "BlockLogger"
+                self.logger_config.block_log, "BlockLogger"
             )
 
         # Configuration files
