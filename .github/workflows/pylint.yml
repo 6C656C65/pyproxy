@@ -23,9 +23,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --no-cache-dir pylint
+          pip install --no-cache-dir pylint bandit
           pip install --no-cache-dir -r requirements.txt
 
       - name: Run Pylint
         run: |
           PYTHONPATH=. pylint $(git ls-files '*.py')
+
+      - name: Run Bandit
+        run: |
+          bandit -r . --exit-zero

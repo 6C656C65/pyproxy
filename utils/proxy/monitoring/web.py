@@ -254,4 +254,4 @@ def start_flask_server(proxy_server: 'ProxyServer', flask_port, flask_pass, debu
         monitor = ProxyMonitor(proxy_server)
         return jsonify(monitor.get_process_info())
 
-    app.run(host='0.0.0.0', port=flask_port)
+    app.run(host='0.0.0.0', port=flask_port) # nosec
