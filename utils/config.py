@@ -25,6 +25,9 @@ class ProxyConfigLogger:
 
 
     def to_dict(self):
+        """
+        Converts the ProxyConfigLogger instance into a dictionary.
+        """
         return {
             'access_log': self.access_log,
             'block_log': self.block_log,
@@ -49,6 +52,9 @@ class ProxyConfigFilter:
                 f"blocked_url={self.blocked_url})")
 
     def to_dict(self):
+        """
+        Converts the ProxyConfigFilter instance into a dictionary.
+        """
         return {
             'no_filter': self.no_filter,
             'filter_mode': self.filter_mode,
@@ -76,6 +82,9 @@ class ProxyConfigSSL:
                 f"cancel_inspect={self.cancel_inspect})")
 
     def to_dict(self):
+        """
+        Converts the ProxyConfigSSL instance into a dictionary.
+        """
         return {
             'ssl_inspect': self.ssl_inspect,
             'inspect_ca_cert': self.inspect_ca_cert,
