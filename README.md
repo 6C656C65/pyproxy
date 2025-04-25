@@ -15,16 +15,6 @@
 ![GitHub Actions test](https://img.shields.io/github/actions/workflow/status/6C656C65/pyproxy/unittest.yml)
 ![GitHub Actions push](https://img.shields.io/github/actions/workflow/status/6C656C65/pyproxy/docker-images.yml)
 
-## 📑 **Table of Contents**
-
-1. [Features](#-features)
-2. [Installation](#-installation)
-   - [Install from source](#install-from-source)
-3. [Usage](#-usage)
-   - [Start the Proxy](#start-the-proxy)
-   - [Debug Mode](#debug-mode)
-4. [To do](#-to-do)
-
 ## ⚡ **Features**
 
 - Support HTTP & HTTPS
@@ -89,5 +79,9 @@ If you encounter any problems, or if you want to use the program in a particular
 - Proxy authentication
 - Benchmark
 - Fix HSTS
+
+## 🤝 **Contributing**
+
+Contributions are welcome and appreciated! If you'd like to improve this project, feel free to fork the repository and submit a pull request. Whether it's fixing bugs, adding new features, improving documentation, or suggesting enhancements, every bit helps. Please make sure to follow the coding standards and test your changes before submitting. Let's build something great together!
 
 ---
