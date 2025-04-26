@@ -60,7 +60,7 @@
                                 <p><strong>Client:</strong> ${conn.client_ip}:${conn.client_port}</p>
                                 <p><strong>Target:</strong> ${conn.target_ip}:${conn.target_port}</p>
                                 <p><strong>Sent:</strong> ${conn.bytes_sent} bytes</p>
-                                <p><strong>Received:</strong> ${conn.bytes_received} bytes</p>
+                                <p><strong>Received:</strong> ${formatBytes(conn.bytes_received)}</p>
                             </div>
                         `).join('')}
                 `;
@@ -101,6 +101,14 @@
         fetchConfigData();
         setInterval(fetchMonitoringData, 5000);
         setInterval(fetchConfigData, 5000);
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            const value = bytes / Math.pow(1024, i);
+            return value.toFixed(2) + ' ' + sizes[i];
+        }
     </script>
 </body>
 </html>
