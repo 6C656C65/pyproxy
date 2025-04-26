@@ -170,14 +170,18 @@ class ProxyHandlers:
             server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             server_socket.connect((server_host, server_port))
             server_socket.sendall(request)
+            server_socket.settimeout(5)
             self.active_connections[thread_id]["bytes_sent"] += len(request)
 
             while True:
-                response = server_socket.recv(4096)
-                if len(response) > 0:
-                    client_socket.send(response)
-                    self.active_connections[thread_id]["bytes_received"] += len(response)
-                else:
+                try:
+                    response = server_socket.recv(4096)
+                    if response:
+                        client_socket.send(response)
+                        self.active_connections[thread_id]["bytes_received"] += len(response)
+                    else:
+                        break
+                except socket.timeout:
                     break
         except (socket.timeout, socket.gaierror, ConnectionRefusedError, OSError) as e:
             self.console_logger.error("Error connecting to the server %s : %s", server_host, e)

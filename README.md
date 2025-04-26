@@ -78,7 +78,6 @@ If you encounter any problems, or if you want to use the program in a particular
 - Adding ACL
 - Proxy authentication
 - Fix HSTS
-- Wiki monitoring
 
 ## 🏎️ **Benchmark**
 
