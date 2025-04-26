@@ -10,7 +10,8 @@ TEMPLATE_PATH = "benchmark/templates/report_template.html"
 
 def generate_combined_table(all_results: dict) -> str:
     """
-    Generates a single HTML table combining statistics for all URLs with sub-columns for avg, min, and max.
+    Generates a single HTML table combining statistics for all
+    URLs with sub-columns for avg, min, and max.
     
     Args:
         all_results (dict): A dictionary containing the results for each URL.
@@ -125,7 +126,7 @@ def create_combined_html_report(all_results: dict, avg_without_proxy: float, avg
 
     filenames = prepare_filenames(output_dir, timestamp)
 
-    for url, (stats, results) in all_results.items():
+    for url, (_, results) in all_results.items():
         fig.add_trace(go.Scatter(x=results['Request Number'], y=results['Without Proxy'],
                                  mode='lines+markers', name=f'Without Proxy - {url}'))
         fig.add_trace(go.Scatter(x=results['Request Number'], y=results['With Proxy'],

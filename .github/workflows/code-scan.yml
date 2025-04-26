@@ -25,6 +25,7 @@ jobs:
         run: |
           pip install --no-cache-dir pylint bandit
           pip install --no-cache-dir -r requirements.txt
+          pip install --no-cache-dir -r benchmark/requirements.txt
 
       - name: Run Pylint
         run: |

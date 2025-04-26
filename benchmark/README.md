@@ -86,8 +86,8 @@ The detailed report will be available in the `outputs` directory as a file named
 ### Example Reports 
 
 Example reports can be found in the following files:
-- [Interactive Report Example](benchmark/outputs/benchmark_combined_interactive_example.html)
-- [Report Example](benchmark/outputs/benchmark_combined_report_example.html)
+- [Interactive Report Example](outputs/benchmark_combined_interactive_example.html)
+- [Report Example](outputs/benchmark_combined_report_example.html)
 
 These files contain example benchmark results and interactive graphs.
 
