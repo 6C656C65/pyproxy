@@ -8,9 +8,9 @@ import argparse
 import sys
 import os
 from datetime import datetime
-import plotly.graph_objects as go
 import pandas as pd
 from utils.req import send_request_with_proxy, send_request_without_proxy
+from utils.html import create_combined_html_report
 
 def benchmark(url: str, proxy: str, num_requests: int) -> tuple:
     """
@@ -63,121 +63,6 @@ def benchmark(url: str, proxy: str, num_requests: int) -> tuple:
     })
 
     return stats, results
-
-def generate_html_section_for_url(url: str, stats: dict) -> str:
-    """
-    Generates the HTML section for a specific URL with benchmark statistics.
-    
-    Args:
-        url (str): The URL being tested.
-        stats (dict): The statistics for the URL.
-
-    Returns:
-        str: The HTML section as a string.
-    """
-    section = f"""
-    <h2>Results for {url}</h2>
-    <h3>Without proxy</h3>
-    <p>Average: {stats['avg_without_proxy']:.5f} seconds</p>
-    <p>Min: {stats['min_without_proxy']:.5f} seconds</p>
-    <p>Max: {stats['max_without_proxy']:.5f} seconds</p>
-
-    <h3>With proxy</h3>
-    <p>Average: {stats['avg_with_proxy']:.5f} seconds</p>
-    <p>Min: {stats['min_with_proxy']:.5f} seconds</p>
-    <p>Max: {stats['max_with_proxy']:.5f} seconds</p>
-    <hr>
-    """
-    return section
-
-def prepare_filenames(output_dir: str, timestamp: str) -> dict:
-    """
-    Prepares the filenames for the report and plotly files.
-    
-    Args:
-        output_dir (str): The directory to save the report in.
-        timestamp (str): The timestamp to use in filenames.
-        
-    Returns:
-        dict: A dictionary containing the plotly and html file paths.
-    """
-    output_dir = os.path.normpath(output_dir)
-
-    plotly_filename = f"benchmark_combined_interactive_{timestamp}.html"
-    html_filename = f"benchmark_combined_report_{timestamp}.html"
-
-    plotly_filepath = os.path.join(output_dir, plotly_filename)
-    html_filepath = os.path.join(output_dir, html_filename)
-
-    return {
-        "plotly": plotly_filepath,
-        "html": html_filepath
-    }
-
-def create_combined_html_report(all_results: dict, avg_without_proxy: float, avg_with_proxy: float,
-                                percentage_change: float, output_dir: str, timestamp: str) -> None:
-    """
-    Generates an HTML report with the benchmark results, including graphs and statistics. 
-    Saves the report to the specified output directory.
-
-    Args:
-        all_results (dict): A dictionary containing the results for each URL.
-        avg_without_proxy (float): The average time for requests without a proxy.
-        avg_with_proxy (float): The average time for requests with a proxy.
-        percentage_change (float): The percentage change in performance
-                    between requests with and without a proxy.
-        output_dir (str): The directory to save the report in.
-        timestamp (str): The timestamp to use in filenames.
-        
-    Returns:
-        None
-    """
-    fig = go.Figure()
-    html_sections = ""
-
-    filenames = prepare_filenames(output_dir, timestamp)
-    print(filenames)
-
-    for url, (stats, results) in all_results.items():
-        fig.add_trace(go.Scatter(x=results['Request Number'], y=results['Without Proxy'],
-                                 mode='lines+markers', name=f'Without Proxy - {url}'))
-        fig.add_trace(go.Scatter(x=results['Request Number'], y=results['With Proxy'],
-                                 mode='lines+markers', name=f'With Proxy - {url}'))
-
-        html_sections += generate_html_section_for_url(url, stats)
-
-    fig.update_layout(title="Response Time per Request (All URLs)",
-                      xaxis_title="Request Number",
-                      yaxis_title="Response Time (seconds)")
-
-    fig.write_html(filenames["plotly"])
-
-    plotly_filename = os.path.basename(filenames["plotly"])
-
-    html_content = f"""
-    <html>
-    <head><title>Proxy Performance Benchmark</title></head>
-    <body>
-        <h1>Global Proxy Performance Benchmark</h1>
-        
-        <!-- Global performance summary at the top -->
-        <h2>Global Performance Summary</h2>
-        <p><strong>Global average without proxy: </strong>{avg_without_proxy:.6f} seconds</p>
-        <p><strong>Global average with proxy: </strong>{avg_with_proxy:.6f} seconds</p>
-        <p><strong>Impact: </strong>{'Improvement' if percentage_change < 0 else 'Slowdown'} of {abs(percentage_change):.2f}%</p>
-        
-        {html_sections}
-        <h2>Graphs</h2>
-        <p>Global interactive response time graph</p>
-        <iframe src="{plotly_filename}" width="100%" height="600"></iframe>
-    </body>
-    </html>
-    """
-
-    with open(filenames["html"], "w", encoding="utf-8") as f:
-        f.write(html_content)
-
-    print(f"\nThe combined report has been generated at '{filenames['html']}'.")
 
 def main() -> None:
     """
