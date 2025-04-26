@@ -8,30 +8,60 @@ import plotly.graph_objects as go
 
 TEMPLATE_PATH = "benchmark/templates/report_template.html"
 
-def generate_html_section_for_url(url: str, stats: dict) -> str:
+def generate_combined_table(all_results: dict) -> str:
     """
-    Generates the HTML section for a specific URL with benchmark statistics.
+    Generates a single HTML table combining statistics for all URLs with sub-columns for avg, min, and max.
     
     Args:
-        url (str): The URL being tested.
-        stats (dict): The statistics for the URL.
-
+        all_results (dict): A dictionary containing the results for each URL.
+    
     Returns:
-        str: The HTML section as a string.
+        str: The HTML table as a string.
     """
-    section = f"""
+    table_html = """
     <div class="summary">
-        <h2>Results for {url}</h2>
+        <h2>Benchmark Results Summary</h2>
         <table>
-            <tr><th>Metric</th><th>Without Proxy</th><th>With Proxy</th></tr>
-            <tr><td>Average</td><td>{stats['avg_without_proxy']:.5f} s</td><td>{stats['avg_with_proxy']:.5f} s</td></tr>
-            <tr><td>Min</td><td>{stats['min_without_proxy']:.5f} s</td><td>{stats['min_with_proxy']:.5f} s</td></tr>
-            <tr><td>Max</td><td>{stats['max_without_proxy']:.5f} s</td><td>{stats['max_with_proxy']:.5f} s</td></tr>
+            <thead>
+                <tr>
+                    <th>URL</th>
+                    <th colspan="3">Without Proxy</th>
+                    <th colspan="3">With Proxy</th>
+                </tr>
+                <tr>
+                    <th></th>
+                    <th>Avg (s)</th>
+                    <th>Min (s)</th>
+                    <th>Max (s)</th>
+                    <th>Avg (s)</th>
+                    <th>Min (s)</th>
+                    <th>Max (s)</th>
+                </tr>
+            </thead>
+            <tbody>
+    """
+
+    for url, (stats, _) in all_results.items():
+        table_html += f"""
+            <tr>
+                <td>{url}</td>
+                <td>{stats['avg_without_proxy']:.5f}</td>
+                <td>{stats['min_without_proxy']:.5f}</td>
+                <td>{stats['max_without_proxy']:.5f}</td>
+                <td>{stats['avg_with_proxy']:.5f}</td>
+                <td>{stats['min_with_proxy']:.5f}</td>
+                <td>{stats['max_with_proxy']:.5f}</td>
+            </tr>
+        """
+
+    table_html += """
+            </tbody>
         </table>
     </div>
     <hr>
     """
-    return section
+
+    return table_html
 
 def prepare_filenames(output_dir: str, timestamp: str) -> dict:
     """
@@ -74,7 +104,7 @@ def render_template(template_path: str, context: dict) -> str:
     return template.format(**context)
 
 def create_combined_html_report(all_results: dict, avg_without_proxy: float, avg_with_proxy: float,
-                                percentage_change: float, output_dir: str, timestamp: str) -> None:
+                                 percentage_change: float, output_dir: str, timestamp: str) -> None:
     """
     Generates an HTML report with the benchmark results, including graphs and statistics. 
     Saves the report to the specified output directory.
@@ -92,7 +122,6 @@ def create_combined_html_report(all_results: dict, avg_without_proxy: float, avg
         None
     """
     fig = go.Figure()
-    html_sections = ""
 
     filenames = prepare_filenames(output_dir, timestamp)
 
@@ -102,14 +131,13 @@ def create_combined_html_report(all_results: dict, avg_without_proxy: float, avg
         fig.add_trace(go.Scatter(x=results['Request Number'], y=results['With Proxy'],
                                  mode='lines+markers', name=f'With Proxy - {url}'))
 
-        html_sections += generate_html_section_for_url(url, stats)
-
     fig.update_layout(title="Response Time per Request (All URLs)",
                       xaxis_title="Request Number",
                       yaxis_title="Response Time (seconds)")
 
-
     fig.write_html(filenames["plotly"])
+
+    html_sections = generate_combined_table(all_results)
 
     context = {
         "avg_without_proxy": f"{avg_without_proxy:.6f} seconds",

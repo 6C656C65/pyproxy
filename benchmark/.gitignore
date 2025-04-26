@@ -1,1 +1,2 @@
 outputs/*.html
+!outputs/*example.html

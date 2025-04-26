@@ -79,7 +79,11 @@ If you encounter any problems, or if you want to use the program in a particular
 - Proxy authentication
 - Benchmark
 - Fix HSTS
-- Wiki monitoring & benchmark
+- Wiki monitoring
+
+## 🏎️ **Benchmark**
+
+If you're interested in benchmarking the performance of the proxy or comparing request times with and without a proxy, please refer to the [Benchmark README](benchmark/README.md) for detailed instructions on how to run the benchmarking tests and generate reports.
 
 ## 🤝 **Contributing**
 
