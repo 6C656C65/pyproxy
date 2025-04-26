@@ -79,6 +79,7 @@ If you encounter any problems, or if you want to use the program in a particular
 - Proxy authentication
 - Benchmark
 - Fix HSTS
+- Wiki monitoring & benchmark
 
 ## 🤝 **Contributing**
 
