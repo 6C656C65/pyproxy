@@ -15,6 +15,7 @@ import time
 import sys
 import threading
 import requests
+from urllib.parse import urlparse
 
 def load_blacklist(blocked_sites_path: str, blocked_url_path: str, filter_mode: str) -> set:
     """
@@ -64,7 +65,8 @@ def filter_process(
     result_queue: multiprocessing.Queue,
     filter_mode: str,
     blocked_sites_path: str,
-    blocked_url_path: str
+    blocked_url_path: str,
+    refresh_interval=5
 ) -> None:
     """
     Process that listens for requests and checks if the domain/URL should be blocked.
@@ -76,6 +78,7 @@ def filter_process(
         filter_mode (str): Filter list mode (local or http).
         blocked_sites_path (str): The path to the file containing blocked FQDNs.
         blocked_url_path (str): The path to the file containing blocked URLs.
+        refresh_interval (int): Interval in seconds to reload the blacklist files.
     """
     manager = multiprocessing.Manager()
     blocked_data = manager.dict({
@@ -97,7 +100,7 @@ def filter_process(
                 blocked_data["sites"] = new_blocked_sites
                 blocked_data["urls"] = new_blocked_url
 
-                time.sleep(5)
+                time.sleep(refresh_interval)
         except (IOError, ValueError) as e:
             print(f"File monitor error: {e}")
             error_event.set()
@@ -113,24 +116,15 @@ def filter_process(
         try:
             request = queue.get()
 
-            http_pos = request.find("//")
-            if http_pos != -1:
-                request = request[(http_pos+2):]
-            port_pos = request.find(":")
-            path_pos = request.find("/")
-            if path_pos == -1:
-                path_pos = len(request)
+            parsed = urlparse(request)
+            server_host = parsed.hostname
+            url_path = parsed.path if parsed.path else "/"
+            full_url = server_host + url_path if server_host else ""
 
-            if port_pos != -1 and port_pos < path_pos:
-                server_host = request[:port_pos]
-            else:
-                server_host = request[:path_pos]
-            url_path = request[path_pos:] if path_pos < len(request) else "/"
-
-            if server_host in blocked_data["sites"] or "*" in blocked_data["sites"]:
+            if any(server_host.startswith(blocked_host) for blocked_host in blocked_data["sites"]) or "*" in blocked_data["sites"]:
                 result_queue.put((server_host, "Blocked"))
-            elif server_host + url_path in blocked_data["urls"]:
-                result_queue.put((server_host + url_path, "Blocked"))
+            elif any(full_url.startswith(blocked_url) for blocked_url in blocked_data["urls"]):
+                result_queue.put((full_url, "Blocked"))
             else:
                 result_queue.put((server_host, "Allowed"))
 
