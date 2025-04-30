@@ -14,8 +14,8 @@ import multiprocessing
 import time
 import sys
 import threading
-import requests
 from urllib.parse import urlparse
+import requests
 
 def load_blacklist(blocked_sites_path: str, blocked_url_path: str, filter_mode: str) -> set:
     """
@@ -121,7 +121,10 @@ def filter_process(
             url_path = parsed.path if parsed.path else "/"
             full_url = server_host + url_path if server_host else ""
 
-            if any(server_host.startswith(blocked_host) for blocked_host in blocked_data["sites"]) or "*" in blocked_data["sites"]:
+            if "*" in blocked_data["sites"] or any(
+                server_host.startswith(blocked_host)
+                for blocked_host in blocked_data["sites"]
+            ):
                 result_queue.put((server_host, "Blocked"))
             elif any(full_url.startswith(blocked_url) for blocked_url in blocked_data["urls"]):
                 result_queue.put((full_url, "Blocked"))

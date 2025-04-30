@@ -11,17 +11,19 @@ Tested Functions:
 Test Cases:
 - TestLoadBlacklist: Checks the correct loading of blocked sites and URLs from the file.
 - TestFilterProcess: Verifies that domains/URLs are correctly identified as blocked or allowed.
-- TestLoadBlacklistFileNotFound: Verifies that a FileNotFoundError is raised when the blacklist file is missing.
-- TestLoadBlacklistHttpError: Verifies that an HTTP error is handled correctly when loading blacklists.
-- TestLoadBlacklistEmptyFile: Verifies that an empty file returns empty sets for blocked sites and URLs.
+- TestLoadBlacklistFileNotFound: Verifies that a FileNotFoundError is
+                raised when the blacklist file is missing.
+- TestLoadBlacklistHttpError: Verifies that an HTTP error is handled
+                correctly when loading blacklists.
+- TestLoadBlacklistEmptyFile: Verifies that an empty file returns empty
+                sets for blocked sites and URLs.
 - TestFilterProcessWithPathAndPort: Verifies that URLs with paths or ports are correctly filtered.
 """
 
 import unittest
 import multiprocessing
-import time
-import requests
 from unittest.mock import patch, mock_open
+import requests
 from utils.proxy.filter import load_blacklist, filter_process
 
 class TestFilter(unittest.TestCase):
@@ -43,7 +45,11 @@ class TestFilter(unittest.TestCase):
 
     def test_load_blacklist(self):
         """Tests if the blacklist is correctly loaded from the file."""
-        with patch("builtins.open", new_callable=mock_open, read_data="blocked.com\nallowed.com/blocked"):
+        with patch(
+            "builtins.open",
+            new_callable=mock_open,
+            read_data="blocked.com\nallowed.com/blocked"
+        ):
             blocked_sites, blocked_urls = load_blacklist(
                 "blocked_sites.txt", "blocked_urls.txt", "local"
             )
@@ -53,30 +59,49 @@ class TestFilter(unittest.TestCase):
             self.assertIsInstance(blocked_urls, set)
 
     @patch("builtins.open", side_effect=FileNotFoundError("File not found"))
-    def test_load_blacklist_file_not_found(self, mock_file):
+    def test_load_blacklist_file_not_found(self, _mock_file):
         """Tests that a FileNotFoundError is raised when the blacklist file is missing."""
         with self.assertRaises(FileNotFoundError):
             load_blacklist("invalid_file.txt", "blocked_urls.txt", "local")
 
     @patch("requests.get", side_effect=requests.exceptions.RequestException("Failed to load"))
-    def test_load_blacklist_http_error(self, mock_request):
+    def test_load_blacklist_http_error(self, _mock_request):
         """Tests that an HTTP error is handled correctly when loading blacklists."""
         with self.assertRaises(requests.exceptions.RequestException):
-            load_blacklist("http://example.com/blocked_sites", "http://example.com/blocked_urls", "http")
+            load_blacklist(
+                "http://example.com/blocked_sites",
+                "http://example.com/blocked_urls",
+                "http"
+            )
 
     @patch("builtins.open", new_callable=mock_open, read_data="")
-    def test_load_blacklist_empty_file(self, mock_file):
+    def test_load_blacklist_empty_file(self, _mock_file):
         """Tests that an empty file returns empty sets for blocked sites and URLs."""
-        blocked_sites, blocked_urls = load_blacklist("empty_sites.txt", "empty_urls.txt", "local")
+        blocked_sites, blocked_urls = load_blacklist(
+            "empty_sites.txt",
+            "empty_urls.txt",
+            "local"
+        )
         self.assertEqual(len(blocked_sites), 0)
         self.assertEqual(len(blocked_urls), 0)
 
-    def _test_filter_process_helper(self, input_urls, expected_results, patch_data="blocked.com\nallowed.com/blocked"):
+    def _test_filter_process_helper(
+        self,
+        input_urls,
+        expected_results,
+        patch_data="blocked.com\nallowed.com/blocked"
+    ):
         """Helper method to test filter_process with different inputs."""
         with patch("builtins.open", new_callable=mock_open, read_data=patch_data):
             process = multiprocessing.Process(
                 target=filter_process,
-                args=(self.queue, self.result_queue, "local", "blocked_sites.txt", "blocked_urls.txt")
+                args=(
+                    self.queue,
+                    self.result_queue,
+                    "local",
+                    "blocked_sites.txt",
+                    "blocked_urls.txt"
+                )
             )
             process.start()
 
@@ -119,10 +144,16 @@ class TestFilter(unittest.TestCase):
             ("example.com/secret", "Blocked"),
             ("safe.com", "Allowed")
         ]
-        self._test_filter_process_helper(input_urls, expected_results, patch_data="blocked.com\nexample.com/secret")
+        self._test_filter_process_helper(
+            input_urls,
+            expected_results,
+            patch_data="blocked.com\nexample.com/secret"
+        )
 
     def test_filter_process_subdomain_not_blocked(self):
-        """Tests if subdomains are correctly handled and not blocked if the main domain is not blocked."""
+        """
+        Tests if subdomains are correctly handled and not blocked if the main domain is not blocked.
+        """
         input_urls = ["http://sub.blocked.com/"]
         expected_results = [("sub.blocked.com", "Allowed")]
         self._test_filter_process_helper(input_urls, expected_results, patch_data="blocked.com\n")
@@ -131,7 +162,11 @@ class TestFilter(unittest.TestCase):
         """Tests if URLs with special characters are correctly handled."""
         input_urls = ["http://weird-site.com/"]
         expected_results = [("weird-site.com", "Blocked")]
-        self._test_filter_process_helper(input_urls, expected_results, patch_data="weird-site.com\n")
+        self._test_filter_process_helper(
+            input_urls,
+            expected_results,
+            patch_data="weird-site.com\n"
+        )
 
     def test_filter_process_with_path_and_port(self):
         """Tests if URLs with paths and ports are correctly filtered."""
