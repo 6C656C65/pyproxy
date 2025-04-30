@@ -294,7 +294,7 @@ class ProxyHandlers:
                 ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 |
                 ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
             )
-            client_context.load_verify_locations(self.ssl_config.inspect_cert)
+            client_context.load_verify_locations(self.ssl_config.inspect_ca_cert)
 
             try:
                 client_socket.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
@@ -473,6 +473,11 @@ class ProxyHandlers:
             cert.gmtime_adj_notAfter(365 * 24 * 60 * 60)
             cert.set_issuer(ca_cert.get_subject())
             cert.set_pubkey(key)
+            san = f"DNS:{domain}"
+            cert.add_extensions([
+                crypto.X509Extension(b"subjectAltName", False, san.encode())
+            ])
+
             cert.sign(ca_key, 'sha256')
 
             with open(cert_path, "wb") as f:

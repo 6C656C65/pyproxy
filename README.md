@@ -77,7 +77,6 @@ If you encounter any problems, or if you want to use the program in a particular
 - Caching of latest and most searched pages
 - Adding ACL
 - Proxy authentication
-- Fix HSTS
 
 ## 🏎️ **Benchmark**
 
