@@ -1,23 +1,15 @@
 """
-test_logger.py
+tests.utils.test_logger.py
 
 This module contains unit tests for the `logger.py` module.
 It verifies the correct configuration of both console and file loggers.
-
-Tested Functions:
-- configure_console_logger: Ensures the console logger is correctly set up.
-- configure_file_logger: Ensures the file logger is correctly set up.
-
-Test Cases:
-- TestConsoleLogger: Checks console logger configuration.
-- TestFileLogger: Checks file logger configuration.
 """
 
 import unittest
 import logging
 import os
 from unittest.mock import patch, MagicMock
-from utils.logger import configure_console_logger, configure_file_logger
+from pyproxy.utils.logger import configure_console_logger, configure_file_logger
 
 class TestLogger(unittest.TestCase):
     """

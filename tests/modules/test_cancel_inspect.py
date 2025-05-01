@@ -15,7 +15,7 @@ import os
 import multiprocessing
 import time
 
-from utils.proxy.cancel_inspect import load_cancel_inspect, cancel_inspect_process
+from pyproxy.modules.cancel_inspect import load_cancel_inspect, cancel_inspect_process
 
 
 class TestCancelInspect(unittest.TestCase):

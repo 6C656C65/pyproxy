@@ -1,5 +1,5 @@
 """
-config.py
+pyproxy.utils.args.py
 
 This module allows you to read the program configuration file and return the values.
 """
@@ -7,7 +7,7 @@ This module allows you to read the program configuration file and return the val
 import configparser
 import argparse
 from rich_argparse import MetavarTypeRichHelpFormatter
-from utils.version import __version__
+from pyproxy.utils.version import __version__
 
 # pylint: disable=C0301
 

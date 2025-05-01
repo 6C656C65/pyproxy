@@ -11,7 +11,9 @@ import select
 import os
 import ssl
 import threading
-from OpenSSL import crypto
+
+from pyproxy.utils.crypto import generate_certificate
+from pyproxy.utils.http_req import extract_headers, parse_url
 
 # pylint: disable=R0914
 class ProxyHandlers:
@@ -77,13 +79,13 @@ class ProxyHandlers:
         url = first_line.split(" ")[1]
 
         if self.config_custom_header and os.path.isfile(self.config_custom_header):
-            headers = self.extract_headers(request.decode(errors='ignore'))
+            headers = extract_headers(request.decode(errors='ignore'))
             self.custom_header_queue.put(url)
             new_headers = self.custom_header_result_queue.get()
             headers.update(new_headers)
 
         if self.config_shortcuts:
-            domain, _ = self.parse_url(url)
+            domain, _ = parse_url(url)
             self.shortcuts_queue.put(domain)
             shortcut_url = self.shortcuts_result_queue.get()
             if shortcut_url:
@@ -122,7 +124,7 @@ class ProxyHandlers:
                 client_socket.close()
                 self.active_connections.pop(threading.get_ident(), None)
                 return
-        server_host, _ = self.parse_url(url)
+        server_host, _ = parse_url(url)
         if not self.logger_config.no_logging_access:
             self.logger_config.access_logger.info(
                 "%s - %s - %s",
@@ -159,7 +161,7 @@ class ProxyHandlers:
             request (bytes): The raw HTTP request sent by the client.
             url (str): The target URL from the HTTP request.
         """
-        server_host, server_port = self.parse_url(url)
+        server_host, server_port = parse_url(url)
         thread_id = threading.get_ident()
 
         if thread_id in self.active_connections:
@@ -198,50 +200,6 @@ class ProxyHandlers:
             client_socket.close()
             server_socket.close()
             self.active_connections.pop(thread_id, None)
-
-    def parse_url(self, url):
-        """
-        Parses the URL to extract the host and port for connecting to the target server.
-        
-        Args:
-            url (str): The URL to be parsed.
-        
-        Returns:
-            tuple: The server host and port.
-        """
-        http_pos = url.find("//")
-        if http_pos != -1:
-            url = url[(http_pos + 2):]
-        port_pos = url.find(":")
-        path_pos = url.find("/")
-        if path_pos == -1:
-            path_pos = len(url)
-
-        server_host = url[:path_pos] if port_pos == -1 or port_pos > path_pos else url[:port_pos]
-        if port_pos == -1 or port_pos > path_pos:
-            server_port = 80
-        else:
-            server_port = int(url[(port_pos + 1):path_pos])
-
-        return server_host, server_port
-
-    def extract_headers(self, request_str):
-        """
-        Extracts the HTTP headers from a raw HTTP request string.
-
-        Args:
-            request_str (str): The full HTTP request as a decoded string.
-
-        Returns:
-            dict: A dictionary containing the HTTP header fields as key-value pairs.
-        """
-        headers = {}
-        lines = request_str.split("\n")[1:]
-        for line in lines:
-            if line.strip():
-                key, value = line.split(":", 1)
-                headers[key.strip()] = value.strip()
-        return headers
 
     # pylint: disable=too-many-locals,too-many-statements,too-many-branches,too-many-nested-blocks
     def handle_https_connection(self, client_socket, first_line):
@@ -287,7 +245,12 @@ class ProxyHandlers:
             not_inspect = self.cancel_inspect_result_queue.get()
 
         if self.ssl_config.ssl_inspect and not not_inspect:
-            cert_path, key_path = self.generate_certificate(server_host)
+            cert_path, key_path = generate_certificate(
+                server_host,
+                self.ssl_config.inspect_certs_folder,
+                self.ssl_config.inspect_ca_cert,
+                self.ssl_config.inspect_ca_key
+            )
             client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
             client_context.load_cert_chain(certfile=cert_path, keyfile=key_path)
             client_context.options |= (
@@ -443,46 +406,3 @@ class ProxyHandlers:
             client_socket.close()
             server_socket.close()
             self.active_connections.pop(threading.get_ident(), None)
-
-    def generate_certificate(self, domain):
-        """
-        Generates a self-signed SSL certificate for the given domain.
-
-        Args:
-            domain (str): The domain name for which the certificate is generated.
-
-        Returns:
-            tuple: Paths to the generated certificate and private key files.
-        """
-        cert_path = f"{self.ssl_config.inspect_certs_folder}{domain}.pem"
-        key_path = f"{self.ssl_config.inspect_certs_folder}{domain}.key"
-
-        if not os.path.exists(cert_path):
-            key = crypto.PKey()
-            key.generate_key(crypto.TYPE_RSA, 2048)
-
-            with open(self.ssl_config.inspect_ca_cert, "r", encoding='utf-8') as f:
-                ca_cert = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
-            with open(self.ssl_config.inspect_ca_key, "r", encoding='utf-8') as f:
-                ca_key = crypto.load_privatekey(crypto.FILETYPE_PEM, f.read())
-
-            cert = crypto.X509()
-            cert.set_serial_number(int.from_bytes(os.urandom(16), 'big'))
-            cert.get_subject().CN = domain
-            cert.gmtime_adj_notBefore(0)
-            cert.gmtime_adj_notAfter(365 * 24 * 60 * 60)
-            cert.set_issuer(ca_cert.get_subject())
-            cert.set_pubkey(key)
-            san = f"DNS:{domain}"
-            cert.add_extensions([
-                crypto.X509Extension(b"subjectAltName", False, san.encode())
-            ])
-
-            cert.sign(ca_key, 'sha256')
-
-            with open(cert_path, "wb") as f:
-                f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
-            with open(key_path, "wb") as f:
-                f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
-
-        return cert_path, key_path

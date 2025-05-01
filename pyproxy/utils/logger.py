@@ -1,13 +1,7 @@
 """
-logger.py
+pyproxy.utils.logger.py
 
 This module contains functions to configure and return loggers for both console and file output.
-It provides two types of loggers: one for real-time console logging
-and one for logging messages to a file.
-
-Functions:
-- configure_console_logger: Configures a logger that outputs log messages to the console.
-- configure_file_logger: Configures a logger that writes log messages to a specified log file.
 """
 
 import logging

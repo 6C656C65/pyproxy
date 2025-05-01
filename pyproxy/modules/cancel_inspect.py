@@ -1,5 +1,5 @@
 """
-cancel_inspect.py
+pyproxy.modules.cancel_inspect.py
 
 This module contains functions and a process to load and monitor cancel inspection entries.
 It reads a file containing cancel inspection data and checks whether specific entries exist

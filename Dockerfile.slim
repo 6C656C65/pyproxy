@@ -5,9 +5,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Remove features
-RUN rm -r utils/proxy/monitoring
-RUN rm utils/proxy/custom_header.py
-RUN rm utils/proxy/shortcuts.py
+RUN rm -r pyproxy/monitoring
+RUN rm pyproxy/modules/custom_header.py
+RUN rm pyproxy/modules/shortcuts.py
 
 RUN chmod -R 777 /app/logs
 RUN chmod -R 777 /app/config

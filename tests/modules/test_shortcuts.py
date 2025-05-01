@@ -24,7 +24,7 @@ Test Cases:
 import unittest
 import multiprocessing
 from unittest.mock import patch, mock_open
-from utils.proxy.shortcuts import load_shortcuts, shortcuts_process
+from pyproxy.modules.shortcuts import load_shortcuts, shortcuts_process
 
 
 class TestShortcuts(unittest.TestCase):

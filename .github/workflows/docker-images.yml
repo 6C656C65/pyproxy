@@ -34,7 +34,7 @@ jobs:
       - name: Get version from version.py
         id: get_version
         run: |
-          VERSION=$(python -c "from utils.version import __version__; print(__version__)")
+          VERSION=$(python -c "from pyproxy.utils.version import __version__; print(__version__)")
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "Docker tag version: $VERSION"
 

@@ -1,5 +1,5 @@
 """
-shortcuts.py
+pyproxy.modules.shortcuts.py
 
 This module contains functions and a process to load and manage URL shortcuts.
 It loads shortcuts (alias to URL mappings) from a specified file, and provides

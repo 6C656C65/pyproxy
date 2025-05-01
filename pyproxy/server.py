@@ -14,17 +14,17 @@ import multiprocessing
 import os
 import time
 
-from utils.version import __slim__
-from utils.handlers import ProxyHandlers
-from utils.proxy.filter import filter_process
-from utils.proxy.cancel_inspect import cancel_inspect_process
-from utils.logger import configure_file_logger, configure_console_logger
+from pyproxy.utils.version import __slim__
+from pyproxy.utils.logger import configure_file_logger, configure_console_logger
+from pyproxy.handlers import ProxyHandlers
+from pyproxy.modules.filter import filter_process
+from pyproxy.modules.cancel_inspect import cancel_inspect_process
 if not __slim__:
-    from utils.proxy.shortcuts import shortcuts_process
+    from pyproxy.modules.shortcuts import shortcuts_process
 if not __slim__:
-    from utils.proxy.custom_header import custom_header_process
+    from pyproxy.modules.custom_header import custom_header_process
 if not __slim__:
-    from utils.proxy.monitoring import start_flask_server
+    from pyproxy.monitoring import start_flask_server
 
 # pylint: disable=too-few-public-methods,too-many-locals
 class ProxyServer:

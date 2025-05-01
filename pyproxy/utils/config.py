@@ -1,5 +1,5 @@
 """
-config.py
+pyproxy.utils.config.py
 
 This module defines configuration classes used by the HTTP/HTTPS proxy.
 """

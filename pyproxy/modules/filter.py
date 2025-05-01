@@ -1,5 +1,5 @@
 """
-filter.py
+pyproxy.modules.filter.py
 
 This module contains functions and a process to filter and block domains and URLs.
 It loads blocked domain names and URLs from specified files, then listens for 
@@ -116,10 +116,15 @@ def filter_process(
         try:
             request = queue.get()
 
-            parsed = urlparse(request)
-            server_host = parsed.hostname
-            url_path = parsed.path if parsed.path else "/"
-            full_url = server_host + url_path if server_host else ""
+            if "://" in request:
+                parsed = urlparse(request)
+                server_host = parsed.hostname
+                url_path = parsed.path if parsed.path else "/"
+                full_url = (server_host or "") + url_path
+            else:
+                parts = request.split(":")
+                server_host = parts[0] if parts else None
+                full_url = server_host
 
             if "*" in blocked_data["sites"] or any(
                 server_host.startswith(blocked_host)

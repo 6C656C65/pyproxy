@@ -15,7 +15,7 @@ import multiprocessing
 import time
 import json
 
-from utils.proxy.custom_header import load_custom_header, custom_header_process
+from pyproxy.modules.custom_header import load_custom_header, custom_header_process
 
 
 class TestCustomHeader(unittest.TestCase):

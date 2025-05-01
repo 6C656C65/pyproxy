@@ -24,7 +24,7 @@ import unittest
 import multiprocessing
 from unittest.mock import patch, mock_open
 import requests
-from utils.proxy.filter import load_blacklist, filter_process
+from pyproxy.modules.filter import load_blacklist, filter_process
 
 class TestFilter(unittest.TestCase):
     """

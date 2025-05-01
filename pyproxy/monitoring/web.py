@@ -1,5 +1,5 @@
 """
-web.py
+pyproxy.monitoring.web.py
 
 This module defines a monitoring system for the ProxyServer that provides
 information about the server's processes, threads, active connections, and

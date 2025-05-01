@@ -1,5 +1,5 @@
 """
-custom_header.py
+pyproxy.modules.custom_header.py
 
 This module contains functions and a process to load and monitor custom header entries.
 It reads a file with custom header data and checks if specific entries exist in it.
