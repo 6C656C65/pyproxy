@@ -1,7 +1,7 @@
-<h1 align="center">
-  <img src="pyproxy/monitoring/static/favicon.png" width="90" alt="pyproxy logo" style="vertical-align: middle; margin-right: 10px;">
+<div align="center">
+  <img src="pyproxy/monitoring/static/favicon.png" width="32" alt="pyproxy logo" style="vertical-align: middle; margin-right: 10px;">
   <span style="font-size: 2.2em; vertical-align: middle;"><strong>pyproxy</strong></span>
-</h1>
+</div>
 
 **pyproxy** is a lightweight, fast, and customizable Python-based web proxy server designed to handle both HTTP and HTTPS traffic efficiently. It can be used for various purposes, including web scraping, traffic monitoring, and content filtering.
 
