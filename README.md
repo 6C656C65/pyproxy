@@ -3,17 +3,17 @@
 
 ---
 
-![GitHub Release](https://img.shields.io/github/v/release/6C656C65/pyproxy)
-![GitHub License](https://img.shields.io/github/license/6C656C65/pyproxy)
+![GitHub License](https://img.shields.io/github/license/6C656C65/pyproxy?style=for-the-badge)
+![GitHub Commit Activity](https://img.shields.io/github/commit-activity/w/6C656C65/pyproxy?style=for-the-badge)
+![GitHub Contributors](https://img.shields.io/github/contributors/6C656C65/pyproxy?style=for-the-badge)
+![GitHub forks](https://img.shields.io/github/forks/6C656C65/pyproxy?style=for-the-badge)
+![GitHub stars](https://img.shields.io/github/stars/6C656C65/pyproxy?style=for-the-badge)
+![GitHub issues open](https://img.shields.io/github/issues/6C656C65/pyproxy?style=for-the-badge)
+![GitHub issues closed](https://img.shields.io/github/issues-closed/6C656C65/pyproxy?style=for-the-badge)
 
-![GitHub forks](https://img.shields.io/github/forks/6C656C65/pyproxy)
-![GitHub stars](https://img.shields.io/github/stars/6C656C65/pyproxy)
-![GitHub issues open](https://img.shields.io/issues/6C656C65/pyproxy)
-![GitHub issues closed](https://img.shields.io/issues-closed/6C656C65/pyproxy)
-
-![GitHub Actions lint](https://img.shields.io/github/actions/workflow/status/6C656C65/pyproxy/pylint.yml)
-![GitHub Actions test](https://img.shields.io/github/actions/workflow/status/6C656C65/pyproxy/unittest.yml)
-![GitHub Actions push](https://img.shields.io/github/actions/workflow/status/6C656C65/pyproxy/docker-images.yml)
+![GitHub Actions scan](https://img.shields.io/github/actions/workflow/status/6C656C65/pyproxy/code-scan.yml?style=for-the-badge)
+![GitHub Actions test](https://img.shields.io/github/actions/workflow/status/6C656C65/pyproxy/unittest.yml?style=for-the-badge)
+![GitHub Actions push](https://img.shields.io/github/actions/workflow/status/6C656C65/pyproxy/docker-images.yml?style=for-the-badge)
 
 ## ⚡ **Features**
 
