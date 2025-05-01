@@ -28,7 +28,7 @@
 - Cancel inspection on bank site
 - Custom header
 - Web interface monitoring (actives connections, processes status)
-- Docker image slim wihtout (moniting, custom header & shortcuts)
+- Docker image slim without moniting, custom header & shortcuts feature
 
 ## 📦 **Installation**
 

@@ -150,6 +150,7 @@ class ProxyServer:
         """
         Delete old inspection cert/key files if they exist.
         """
+        os.makedirs(self.ssl_config.inspect_certs_folder, exist_ok=True)
         for file in os.listdir(self.ssl_config.inspect_certs_folder):
             if file.endswith((".key", ".pem")):
                 file_path = os.path.join(self.ssl_config.inspect_certs_folder, file)

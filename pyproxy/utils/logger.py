@@ -32,6 +32,7 @@ def configure_file_logger(log_path: str, name: str) -> logging.Logger:
     Returns:
         logging.Logger: A logger instance that writes to the specified log file.
     """
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
     file_logger = logging.getLogger(name)
     file_logger.setLevel(logging.INFO)
     file_handler = logging.FileHandler(log_path)

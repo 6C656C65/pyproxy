@@ -1,3 +1,23 @@
+## [0.3.1] - 2025-04-26
+### Added
+- Add slim image
+- Benchmark
+- Add SAN to generated certificates
+- Add docker-compose
+
+## [0.3.0] - 2025-04-26
+### Added
+- Support header customization
+- Monitoring web interface
+
+## [0.2.7] - 2025-04-26
+### Added
+- Support cancel inspection on site (e.g. bank or medical)
+- Support shortcuts
+- Hardening docker images
+### Patch
+- Docker ignore
+
 ## [0.2.6] - 2025-03-19
 ### Added
 - Support distant blacklist
