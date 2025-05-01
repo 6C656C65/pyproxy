@@ -112,18 +112,18 @@ def start_flask_server(proxy_server: 'ProxyServer', flask_port, flask_pass, debu
             Returns:
                 dict: A dictionary containing subprocess statuses.
             """
-            subprocesses_info = {
-                'filter': self.get_subprocess_status(self.proxy_server.filter_proc, 'filter'),
-                'shortcuts': self.get_subprocess_status(
-                    self.proxy_server.shortcuts_proc, 'shortcuts'
-                ),
-                'cancel_inspect': self.get_subprocess_status(
-                    self.proxy_server.cancel_inspect_proc, 'cancel_inspect'
-                ),
-                'custom_header': self.get_subprocess_status(
-                    self.proxy_server.custom_header_proc, 'custom_header'
-                )
+            subprocesses_info = {}
+
+            subprocesses = {
+                'filter': self.proxy_server.filter_proc,
+                'shortcuts': self.proxy_server.shortcuts_proc,
+                'cancel_inspect': self.proxy_server.cancel_inspect_proc,
+                'custom_header': self.proxy_server.custom_header_proc
             }
+
+            for name, process in subprocesses.items():
+                if process is not None and process.is_alive():
+                    subprocesses_info[name] = self.get_subprocess_status(process, name)
             return subprocesses_info
 
         def get_subprocess_status(
