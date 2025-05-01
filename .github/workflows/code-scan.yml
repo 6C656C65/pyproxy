@@ -29,7 +29,7 @@ jobs:
 
       - name: Run Pylint
         run: |
-          PYTHONPATH=. pylint $(find . -name "*.py" | xargs)
+          PYTHONPATH=. pylint $(git ls-files '*.py')
 
       - name: Run Bandit
         run: |

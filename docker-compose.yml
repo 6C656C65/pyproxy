@@ -1,0 +1,18 @@
+services:
+  pyproxy:
+    image: ghcr.io/6c656c65/pyproxy:latest
+    #build: .
+    restart: unless-stopped
+    ports:
+      # Proxy
+      - "8080:8080"
+      # Flask Monitoring
+      - "5000:5000"
+    # Ensure that the directories on the host use UID 1000 and GID 1000
+    #volumes:
+      #- ./assets:/app/assets
+      #- ./certs/ca:/app/certs/ca
+      #- ./config:/app/config
+      #- ./logs:/app/logs
+      #- ./config.ini:/app/config.ini
+    #command: --debug

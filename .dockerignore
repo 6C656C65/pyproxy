@@ -2,6 +2,7 @@ __pycache__/
 */__pycache__/
 
 config/*.txt
+config/*.json
 logs/*.log
 
 certs/*.key
@@ -11,12 +12,17 @@ certs/*.pem
 tests/
 config.ini.example
 
+benchmark/
+
 .github
 .bumpversion.cfg
 .gitignore
 .git
+.gitattributes
 .pylintrc
 .readthedocs.yaml
 CHANGELOG.md
+CONTRIBUTING.md
 Dockerfile
+Dockerfile.slim
 .dockerignore

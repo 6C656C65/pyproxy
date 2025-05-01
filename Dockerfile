@@ -8,6 +8,7 @@ RUN chmod -R 777 /app/config
 
 
 FROM gcr.io/distroless/python3-debian12:nonroot
+USER 1000:1000
 WORKDIR /app
 COPY --from=builder /usr/local /usr/local
 COPY --from=builder /app /app
