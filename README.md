@@ -1,7 +1,5 @@
 <div align="center">
-  <img src="pyproxy/monitoring/static/favicon.png" width="48" alt="pyproxy logo">
-  <br>
-  <strong style="font-size: 2.7em;">pyproxy</strong>
+  <h1>pyproxy</h1>
 </div>
 
 
