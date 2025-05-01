@@ -4,6 +4,7 @@
 - Benchmark
 - Add SAN to generated certificates
 - Add docker-compose
+- Environment variables usage
 
 ## [0.3.0] - 2025-04-26
 ### Added
