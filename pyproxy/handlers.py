@@ -240,7 +240,11 @@ class ProxyHandlers:
                 return
 
         not_inspect = False
-        if self.ssl_config.ssl_inspect:
+        if (
+            self.ssl_config.ssl_inspect
+            and self.ssl_config.cancel_inspect
+            and os.path.isfile(self.ssl_config.cancel_inspect)
+        ):
             self.cancel_inspect_queue.put(server_host)
             not_inspect = self.cancel_inspect_result_queue.get()
 
