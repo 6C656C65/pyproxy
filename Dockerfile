@@ -3,7 +3,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
-RUN chmod -R 777 /app/config
+RUN mkdir -p logs
+RUN chown -R 1000:1000 /app
 
 
 FROM gcr.io/distroless/python3-debian12:nonroot

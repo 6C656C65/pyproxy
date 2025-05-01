@@ -6,6 +6,7 @@ This module allows you to read the program configuration file and return the val
 
 import configparser
 import argparse
+import os
 from rich_argparse import MetavarTypeRichHelpFormatter
 from pyproxy.utils.version import __version__
 
@@ -82,4 +83,10 @@ def get_config_value(args: argparse.Namespace, config: configparser.ConfigParser
     arg_value = getattr(args, arg_name, None)
     if arg_value:
         return arg_value
+
+    env_var_name = f"PYPROXY_{arg_name.upper().replace('-', '_')}"
+    env_value = os.getenv(env_var_name)
+    if env_value:
+        return env_value
+
     return config.get(section, arg_name, fallback=fallback_value)

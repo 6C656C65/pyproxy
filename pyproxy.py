@@ -18,7 +18,7 @@ def main():
     config = load_config(args.config_file)
 
     host = get_config_value(args, config, 'host', 'Server', "0.0.0.0") # nosec
-    port = get_config_value(args, config, 'port', 'Server', 8080) # nosec
+    port = int(get_config_value(args, config, 'port', 'Server', 8080)) # nosec
     debug = get_config_value(args, config, 'debug', 'Logging', False)
     html_403 = get_config_value(args, config, 'html_403', 'Files', "assets/403.html")
     shortcuts = get_config_value(args, config, 'shortcuts', 'Options', "config/shortcuts.txt")

@@ -15,4 +15,12 @@ services:
       #- ./config:/app/config
       #- ./logs:/app/logs
       #- ./config.ini:/app/config.ini
+    environment:
+      PYPROXY_HOST: 0.0.0.0
+      PYPROXY_PORT: 8080
+      #PYPROXY_SSL_INSPECT: "True"
+      #PYPROXY_INSPECT_CA_CERT: "certs/ca/cert.pem"
+      #PYPROXY_INSPECT_CA_KEY: "certs/ca/key.pem"
+      #PYPROXY_FLASK_PORT: 5000
+      #PYPROXY_DEBUG: "True"
     #command: --debug
