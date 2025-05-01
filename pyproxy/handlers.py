@@ -84,7 +84,7 @@ class ProxyHandlers:
             new_headers = self.custom_header_result_queue.get()
             headers.update(new_headers)
 
-        if self.config_shortcuts:
+        if self.config_shortcuts and os.path.isfile(self.config_shortcuts):
             domain, _ = parse_url(url)
             self.shortcuts_queue.put(domain)
             shortcut_url = self.shortcuts_result_queue.get()
