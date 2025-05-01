@@ -172,10 +172,20 @@ class ProxyServer:
                     self.console_logger.debug("[*] %s = %s", key, getattr(self, key))
 
         if self.ssl_config.ssl_inspect:
-            if not self.ssl_config.inspect_ca_cert or not os.path.isfile(self.ssl_config.inspect_ca_cert):
-                raise FileNotFoundError(f"CA certificate not found: {self.ssl_config.inspect_ca_cert}")
-            if not self.ssl_config.inspect_ca_key or not os.path.isfile(self.ssl_config.inspect_ca_key):
-                raise FileNotFoundError(f"CA key not found: {self.ssl_config.inspect_ca_key}")
+            if (
+                not self.ssl_config.inspect_ca_cert or
+                not os.path.isfile(self.ssl_config.inspect_ca_cert)
+            ):
+                raise FileNotFoundError(
+                    f"CA certificate not found: {self.ssl_config.inspect_ca_cert}"
+                )
+            if (
+                not self.ssl_config.inspect_ca_key or
+                not os.path.isfile(self.ssl_config.inspect_ca_key)
+            ):
+                raise FileNotFoundError(
+                    f"CA key not found: {self.ssl_config.inspect_ca_key}"
+                )
             os.makedirs(self.ssl_config.inspect_certs_folder, exist_ok=True)
             self._clean_inspection_folder()
 

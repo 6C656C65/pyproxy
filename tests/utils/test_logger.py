@@ -46,7 +46,7 @@ class TestLogger(unittest.TestCase):
         mock_handler_instance = MagicMock()
         mock_file_handler.return_value = mock_handler_instance
 
-        log_path = "test.log"
+        log_path = "logs/test.log"
         logger = configure_file_logger(log_path, "TestLogger")
 
         self.assertTrue(logger.hasHandlers())
@@ -59,7 +59,7 @@ class TestLogger(unittest.TestCase):
 
         - Deletes the test log file if it exists.
         """
-        log_file = "test.log"
+        log_file = "logs/test.log"
         if os.path.exists(log_file):
             os.remove(log_file)
 
