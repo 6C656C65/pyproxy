@@ -5,6 +5,7 @@ This module contains functions to configure and return loggers for both console 
 """
 
 import logging
+import os
 
 def configure_console_logger() -> logging.Logger:
     """

@@ -150,7 +150,6 @@ class ProxyServer:
         """
         Delete old inspection cert/key files if they exist.
         """
-        os.makedirs(self.ssl_config.inspect_certs_folder, exist_ok=True)
         for file in os.listdir(self.ssl_config.inspect_certs_folder):
             if file.endswith((".key", ".pem")):
                 file_path = os.path.join(self.ssl_config.inspect_certs_folder, file)
@@ -172,9 +171,12 @@ class ProxyServer:
                 if key not in self._EXCLUDE_DEBUG_KEYS:
                     self.console_logger.debug("[*] %s = %s", key, getattr(self, key))
 
-        if self.ssl_config.ssl_inspect and not os.path.exists(self.ssl_config.inspect_certs_folder):
-            os.makedirs(self.ssl_config.inspect_certs_folder)
-        else:
+        if self.ssl_config.ssl_inspect:
+            if not self.ssl_config.inspect_ca_cert or not os.path.isfile(self.ssl_config.inspect_ca_cert):
+                raise FileNotFoundError(f"CA certificate not found: {self.ssl_config.inspect_ca_cert}")
+            if not self.ssl_config.inspect_ca_key or not os.path.isfile(self.ssl_config.inspect_ca_key):
+                raise FileNotFoundError(f"CA key not found: {self.ssl_config.inspect_ca_key}")
+            os.makedirs(self.ssl_config.inspect_certs_folder, exist_ok=True)
             self._clean_inspection_folder()
 
         if self.filter_config.filter_mode == "local":
