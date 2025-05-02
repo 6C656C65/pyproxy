@@ -57,7 +57,7 @@ jobs:
             ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest-slim
             ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}
             ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest
-          tags: type=sha,format=long
+          tags: type=raw
 
       - name: Build and Push Docker images
         uses: docker/build-push-action@v6.14.0
@@ -71,11 +71,10 @@ jobs:
         run: |
           images=""
           for tag in ${TAGS}; do
-            images+="${tag}@${DIGEST} "
+            images+="${tag}"
           done
           cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${images}
         env:
           TAGS: ${{ steps.docker_meta.outputs.tags }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
-          DIGEST: ${{ steps.build-and-push.outputs.digest }}
