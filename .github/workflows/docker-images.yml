@@ -49,27 +49,33 @@ jobs:
       - name: Convert repository owner to lowercase
         run: echo "REPO_OWNER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
-      - name: Build Docker image
-        run: |
-          docker build -t ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }} -t ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest .
-  
-      - name: Build Docker slim image
-        run: |
-          docker build -f Dockerfile.slim -t ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}-slim -t ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest-slim .
+      - id: docker_meta
+        uses: docker/metadata-action@v5.6.1
+        with:
+          images: |
+            ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}-slim
+            ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest-slim
+            ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}
+            ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest
+          tags: type=sha,format=long
 
-      - name: Push Docker image
-        run: |
-          docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}-slim
-          docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest-slim
-          docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}
-          docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest
+      - name: Build and Push Docker images
+        uses: docker/build-push-action@v6.14.0
+        id: build-and-push
+        with:
+          platforms: linux/amd64,linux/arm/v7,linux/arm64
+          push: true
+          tags: ${{ steps.docker_meta.outputs.tags }}
 
       - name: Sign the publisehd Docker image
         run: |
-          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}
-          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest
-          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}-slim
-          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest-slim
+          images=""
+          for tag in ${TAGS}; do
+            images+="${tag}@${DIGEST} "
+          done
+          cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${images}
         env:
+          TAGS: ${{ steps.docker_meta.outputs.tags }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          DIGEST: ${{ steps.build-and-push.outputs.digest }}
