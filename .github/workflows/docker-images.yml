@@ -20,6 +20,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
 
     steps:
       - name: Checkout repository
@@ -55,3 +56,15 @@ jobs:
           docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest-slim
           docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}
           docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.1.1
+
+      - name: Sign Docker images with Cosign (OIDC)
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          cosign sign ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}
+          cosign sign ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest
+          cosign sign ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}-slim
+          cosign sign ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest-slim
