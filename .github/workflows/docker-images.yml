@@ -65,12 +65,11 @@ jobs:
           docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest
 
       - name: Sign the publisehd Docker image
-        env:
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
         run: |
           cosign sign --yes --key env://COSIGN_PRIVATE_KEY ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}
           cosign sign --yes --key env://COSIGN_PRIVATE_KEY ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest
           cosign sign --yes --key env://COSIGN_PRIVATE_KEY ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}-slim
           cosign sign --yes --key env://COSIGN_PRIVATE_KEY ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest-slim
         env:
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
