@@ -85,4 +85,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 Contributions are welcome and appreciated! If you'd like to improve this project, feel free to fork the repository and submit a pull request. Whether it's fixing bugs, adding new features, improving documentation, or suggesting enhancements, every bit helps. Please make sure to follow the coding standards and test your changes before submitting. Let's build something great together!
 
+## 📦 Deployment with Ansible
+
+If you want to deploy **pyproxy** automatically to remote servers (via source or Docker), an official [Ansible role](https://github.com/6C656C65/pyproxy_ansible) is available:
+
+* 🔧 Install from source or run as a Docker container
+* 📁 Supports customization of ports, versions, and paths
+* 🚀 Easily integrable into your infrastructure or CI/CD pipelines
+
+👉 Check out the [ansible-role-pyproxy](https://github.com/6C656C65/pyproxy_ansible) repository for more details and usage instructions.
+
 ---
