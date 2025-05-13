@@ -13,6 +13,7 @@ import logging
 import multiprocessing
 import os
 import time
+import ipaddress
 
 from pyproxy.utils.version import __slim__
 from pyproxy.utils.logger import configure_file_logger, configure_console_logger
@@ -43,7 +44,8 @@ class ProxyServer:
 
     def __init__(self, host, port, debug, logger_config, filter_config,
                  html_403, ssl_config, shortcuts, custom_header,
-                 flask_port, flask_pass, proxy_enable, proxy_host, proxy_port):
+                 flask_port, flask_pass, proxy_enable, proxy_host, proxy_port,
+                 authorized_ips):
         """
         Initialize the ProxyServer with configuration parameters.
         """
@@ -61,9 +63,12 @@ class ProxyServer:
         self.flask_pass = flask_pass
 
         # Proxy
-        self.proxy_enable=proxy_enable
-        self.proxy_host=proxy_host
-        self.proxy_port=proxy_port
+        self.proxy_enable = proxy_enable
+        self.proxy_host = proxy_host
+        self.proxy_port = proxy_port
+
+        # Authorized IPS
+        self.authorized_ips = authorized_ips
 
         # Process communication queues
         self.filter_proc = None
@@ -163,6 +168,22 @@ class ProxyServer:
                 except (FileNotFoundError, PermissionError, OSError) as e:
                     self.console_logger.debug("Error deleting %s: %s", file_path, e)
 
+    def _load_authorized_ips(self):
+        """
+        Load authorized IPs/subnets from the file.
+        """
+        self.allowed_subnets = None
+
+        if self.authorized_ips and os.path.isfile(self.authorized_ips):
+            with open(self.authorized_ips, "r", encoding="utf-8") as f:
+                lines = [line.strip() for line in f if line.strip()]
+            try:
+                self.allowed_subnets = [ipaddress.ip_network(line, strict=False) for line in lines]
+                self.console_logger.debug("[*] Loaded %d authorized IPs/subnets", len(self.allowed_subnets))
+            except ValueError as e:
+                self.console_logger.error("[*] Invalid IP/subnet in %s: %s", self.authorized_ips, e)
+                self.allowed_subnets = None
+
     def start(self):
         """
         Start the proxy server and listen for incoming client connections.
@@ -201,6 +222,7 @@ class ProxyServer:
                         pass
 
         self._initialize_processes()
+        self._load_authorized_ips()
 
         if not __slim__:
             flask_thread = threading.Thread(
@@ -219,6 +241,15 @@ class ProxyServer:
         try:
             while True:
                 client_socket, addr = server.accept()
+                client_ip, client_port = addr
+
+                if self.allowed_subnets:
+                    ip_obj = ipaddress.ip_address(client_ip)
+                    if not any(ip_obj in net for net in self.allowed_subnets):
+                        self.console_logger.debug("Unauthorized IP blocked: %s", client_ip)
+                        client_socket.close()
+                        continue
+
                 self.console_logger.debug("Connection from %s", addr)
                 client = ProxyHandlers(
                     html_403=self.html_403,
