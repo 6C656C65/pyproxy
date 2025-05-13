@@ -16,7 +16,7 @@ import time
 
 from pyproxy.utils.version import __slim__
 from pyproxy.utils.logger import configure_file_logger, configure_console_logger
-from pyproxy.handlers import ProxyHandlers
+from pyproxy.handlers.client import ProxyHandlers
 from pyproxy.modules.filter import filter_process
 from pyproxy.modules.cancel_inspect import cancel_inspect_process
 if not __slim__:
