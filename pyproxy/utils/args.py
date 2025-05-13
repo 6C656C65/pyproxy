@@ -40,6 +40,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--blocked-url", type=str, help="Path to the text file containing the list of URLs to block")
     parser.add_argument("--shortcuts", type=str, help="Path to the text file containing the list of shortcuts")
     parser.add_argument("--custom-header", type=str, help="Path to the json file containing the list of custom headers")
+    parser.add_argument("--authorized-ips", type=str, help="Path to the txt file containing the list of authorized ips")
     parser.add_argument("--no-logging-access", action="store_true", help="Disable access logging")
     parser.add_argument("--no-logging-block", action="store_true", help="Disable block logging")
     parser.add_argument("--ssl-inspect", action="store_true", help="Enable SSL inspection")

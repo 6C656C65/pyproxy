@@ -38,6 +38,7 @@
 | Web interface monitoring                     | ✅        |
 | Lightweight Docker image                     | ✅        |
 | Proxy chaining (multi-proxy forwarding)      | ✅        |
+| IP whitelist with subnet support             | ✅        |
 
 ## 📦 **Installation**
 
@@ -71,8 +72,6 @@ If you encounter any problems, or if you want to use the program in a particular
 
 - Support content analysis
 - Caching of latest and most searched pages
-- Adding ACL
-- Proxy authentication
 
 ## 🏎️ **Benchmark**
 
