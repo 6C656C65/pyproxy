@@ -16,7 +16,7 @@ import time
 
 from pyproxy.utils.version import __slim__
 from pyproxy.utils.logger import configure_file_logger, configure_console_logger
-from pyproxy.handlers import ProxyHandlers
+from pyproxy.handlers.client import ProxyHandlers
 from pyproxy.modules.filter import filter_process
 from pyproxy.modules.cancel_inspect import cancel_inspect_process
 if not __slim__:
@@ -43,7 +43,7 @@ class ProxyServer:
 
     def __init__(self, host, port, debug, logger_config, filter_config,
                  html_403, ssl_config, shortcuts, custom_header,
-                 flask_port, flask_pass):
+                 flask_port, flask_pass, proxy_enable, proxy_host, proxy_port):
         """
         Initialize the ProxyServer with configuration parameters.
         """
@@ -59,6 +59,11 @@ class ProxyServer:
         # Monitoring
         self.flask_port = flask_port
         self.flask_pass = flask_pass
+
+        # Proxy
+        self.proxy_enable=proxy_enable
+        self.proxy_host=proxy_host
+        self.proxy_port=proxy_port
 
         # Process communication queues
         self.filter_proc = None
@@ -231,6 +236,9 @@ class ProxyServer:
                     console_logger=self.console_logger,
                     shortcuts=self.config_shortcuts,
                     custom_header=self.config_custom_header,
+                    proxy_enable=self.proxy_enable,
+                    proxy_host=self.proxy_host,
+                    proxy_port=self.proxy_port,
                     active_connections=self.active_connections
                 )
                 client_handler = threading.Thread(

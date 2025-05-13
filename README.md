@@ -37,6 +37,7 @@
 | Custom headers                               | ✅        |
 | Web interface monitoring                     | ✅        |
 | Lightweight Docker image                     | ✅        |
+| Proxy chaining (multi-proxy forwarding)      | ✅        |
 
 ## 📦 **Installation**
 

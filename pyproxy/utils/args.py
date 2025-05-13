@@ -49,6 +49,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cancel-inspect", type=str, help="Path to the text file containing the list of URLs without ssl inspection")
     parser.add_argument("--flask-port", type=int, help="Port to listen on for monitoring interface")
     parser.add_argument("--flask-pass", type=int, help="Default password to Flask interface")
+    parser.add_argument("--proxy-enable", action="store_true", help="Enable proxy after PyProxy")
+    parser.add_argument("--proxy-host", type=str, help="Proxy IP to use after PyProxy")
+    parser.add_argument("--proxy-port", type=int, help="Proxy Port to use after PyProxy")
 
     return parser.parse_args()
 

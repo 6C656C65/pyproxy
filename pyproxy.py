@@ -8,7 +8,7 @@ from pyproxy.server import ProxyServer
 from pyproxy.utils.args import parse_args, load_config, get_config_value
 from pyproxy.utils.config import ProxyConfigLogger, ProxyConfigFilter, ProxyConfigSSL
 
-# pylint: disable=C0301
+# pylint: disable=C0301,R0914
 def main():
     """
     Main entry point of the proxy server. It parses command-line arguments, loads the configuration file, 
@@ -25,6 +25,9 @@ def main():
     custom_header = get_config_value(args, config, 'custom_header', 'Options', "config/custom_header.json")
     flask_port = get_config_value(args, config, 'flask_port', 'Monitoring', 5000)
     flask_pass = get_config_value(args, config, 'flask_pass', 'Monitoring', "password")
+    proxy_enable = get_config_value(args, config, 'proxy_enable', 'Proxy', False)
+    proxy_host = get_config_value(args, config, 'proxy_host', 'Proxy', "127.0.0.1")
+    proxy_port = get_config_value(args, config, 'proxy_port', 'Proxy', 8081)
 
     logger_config = ProxyConfigLogger(
         access_log=get_config_value(args, config, 'access_log', 'Logging', "logs/access.log"),
@@ -59,7 +62,10 @@ def main():
         flask_pass=flask_pass,
         html_403=html_403,
         shortcuts=shortcuts,
-        custom_header=custom_header
+        custom_header=custom_header,
+        proxy_enable=proxy_enable,
+        proxy_host=proxy_host,
+        proxy_port=proxy_port
     )
 
     proxy.start()

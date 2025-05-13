@@ -32,3 +32,8 @@ cancel_inspect = config/cancel_inspect.txt
 [Monitoring]
 flask_port = 5000
 flask_pass = password
+
+[Proxy]
+proxy_enable = false
+proxy_host = 127.0.0.1
+proxy_port = 8081
