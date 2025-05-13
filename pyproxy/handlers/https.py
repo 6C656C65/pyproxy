@@ -119,10 +119,31 @@ class HttpsHandler:
                 )
                 ssl_client_socket.do_handshake()
 
-                server_socket = socket.create_connection((server_host, server_port))
+                if self.proxy_enable:
+                    next_proxy_socket = socket.create_connection((self.proxy_host, self.proxy_port))
+                    connect_command = f"CONNECT {server_host}:{server_port} HTTP/1.1\r\nHost: {server_host}:{server_port}\r\n\r\n"
+                    next_proxy_socket.sendall(connect_command.encode())
+
+                    response = b""
+                    while b"\r\n\r\n" not in response:
+                        chunk = next_proxy_socket.recv(4096)
+                        if not chunk:
+                            raise Exception("Connection to next proxy failed")
+                        response += chunk
+
+                    if b"200 Connection Established" not in response:
+                        raise Exception("Next proxy refused CONNECT")
+
+                    server_socket = next_proxy_socket
+                else:
+                    server_socket = socket.create_connection((server_host, server_port))
 
                 server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-                server_context.load_default_certs()
+                if self.proxy_enable:
+                    server_context.check_hostname = False
+                    server_context.verify_mode = ssl.CERT_NONE
+                else:
+                    server_context.load_default_certs()
 
                 ssl_server_socket = server_context.wrap_socket(
                     server_socket,
