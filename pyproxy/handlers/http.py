@@ -1,9 +1,8 @@
 """
-handlers.py
+pyproxy.handlers.http.py
 
-This module defines the ProxyHandlers class used by the proxy server to process
-HTTP and HTTPS client connections. It handles request forwarding, blocking, shortcut
-redirection, custom headers.
+This module defines the HttpHandler class used by the proxy server to process
+HTTP client connections. It handles request forwarding, blocking, and custom headers.
 """
 
 import socket
@@ -15,14 +14,14 @@ from pyproxy.utils.http_req import extract_headers, parse_url
 # pylint: disable=R0914
 class HttpHandler:
     """
-    ProxyHandlers manages client connections for a proxy server,
-    handling both HTTP and HTTPS requests. It processes request forwarding,
-    blocking, and custom headers based on configuration settings.
+    HttpHandler manages client HTTP connections for a proxy server,
+    handling request forwarding, filtering, blocking, and custom header modification
+    based on configuration settings.
     """
     def __init__(self, html_403, logger_config, filter_config,
                  filter_queue, filter_result_queue, shortcuts_queue, shortcuts_result_queue,
                  custom_header_queue, custom_header_result_queue, console_logger, shortcuts,
-                 custom_header, active_connections):
+                 custom_header, active_connections, proxy_host, proxy_port):
         self.html_403 = html_403
         self.logger_config = logger_config
         self.filter_config = filter_config
@@ -35,12 +34,14 @@ class HttpHandler:
         self.console_logger = console_logger
         self.config_shortcuts = shortcuts
         self.config_custom_header = custom_header
+        self.proxy_host=proxy_host
+        self.proxy_port=proxy_port
         self.active_connections = active_connections
 
     def handle_http_request(self, client_socket, request):
         """
-        Handles HTTP requests, checks if the URL is blocked,
-        and forwards the request to the target server.
+        Processes an HTTP request, checks for URL filtering, applies shortcuts,
+        and forwards the request to the target server if not blocked.
         
         Args:
             client_socket (socket): The socket object for the client connection.

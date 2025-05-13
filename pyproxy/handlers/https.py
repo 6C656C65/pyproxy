@@ -1,9 +1,9 @@
 """
-handlers.py
+pyproxy.handlers.https.py
 
-This module defines the ProxyHandlers class used by the proxy server to process
-HTTP and HTTPS client connections. It handles request forwarding, blocking, shortcut
-redirection, custom headers, and optional SSL inspection.
+This class handles HTTPS CONNECT requests, applies filtering rules, supports SSL inspection,
+generates certificates dynamically, and logs access and blocked attempts. It can also
+relay raw data when SSL inspection is disabled.
 """
 
 import socket
@@ -17,15 +17,17 @@ from pyproxy.utils.crypto import generate_certificate
 # pylint: disable=R0914
 class HttpsHandler:
     """
-    ProxyHandlers manages client connections for a proxy server,
-    handling both HTTP and HTTPS requests. It processes request forwarding,
-    blocking, SSL inspection, and custom headers based on configuration settings.
+    Handles HTTPS client connections for a proxy server.
+
+    Supports SSL interception, filtering of targets, and custom logging. This handler
+    processes HTTPS `CONNECT` requests and either tunnels them directly to the destination
+    or performs SSL interception for inspection and filtering.
     """
     def __init__(self, html_403, logger_config, filter_config, ssl_config,
                  filter_queue, filter_result_queue, shortcuts_queue, shortcuts_result_queue,
                  cancel_inspect_queue, cancel_inspect_result_queue, custom_header_queue,
                  custom_header_result_queue, console_logger, shortcuts, custom_header,
-                 active_connections):
+                 active_connections, proxy_host, proxy_port):
         self.html_403 = html_403
         self.logger_config = logger_config
         self.filter_config = filter_config
@@ -41,6 +43,8 @@ class HttpsHandler:
         self.console_logger = console_logger
         self.config_shortcuts = shortcuts
         self.config_custom_header = custom_header
+        self.proxy_host=proxy_host
+        self.proxy_port=proxy_port
         self.active_connections = active_connections
 
     # pylint: disable=too-many-locals,too-many-statements,too-many-branches,too-many-nested-blocks
