@@ -69,6 +69,7 @@ class ProxyServer:
 
         # Authorized IPS
         self.authorized_ips = authorized_ips
+        self.allowed_subnets = None
 
         # Process communication queues
         self.filter_proc = None
@@ -179,11 +180,15 @@ class ProxyServer:
                 lines = [line.strip() for line in f if line.strip()]
             try:
                 self.allowed_subnets = [ipaddress.ip_network(line, strict=False) for line in lines]
-                self.console_logger.debug("[*] Loaded %d authorized IPs/subnets", len(self.allowed_subnets))
+                self.console_logger.debug(
+                    "[*] Loaded %d authorized IPs/subnets",
+                    len(self.allowed_subnets)
+                )
             except ValueError as e:
                 self.console_logger.error("[*] Invalid IP/subnet in %s: %s", self.authorized_ips, e)
                 self.allowed_subnets = None
 
+    # pylint: disable=R0912
     def start(self):
         """
         Start the proxy server and listen for incoming client connections.
