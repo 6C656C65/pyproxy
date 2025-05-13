@@ -121,18 +121,21 @@ class HttpsHandler:
 
                 if self.proxy_enable:
                     next_proxy_socket = socket.create_connection((self.proxy_host, self.proxy_port))
-                    connect_command = f"CONNECT {server_host}:{server_port} HTTP/1.1\r\nHost: {server_host}:{server_port}\r\n\r\n"
+                    connect_command = (
+                        f"CONNECT {server_host}:{server_port} HTTP/1.1\r\n"
+                        f"Host: {server_host}:{server_port}\r\n\r\n"
+                    )
                     next_proxy_socket.sendall(connect_command.encode())
 
                     response = b""
                     while b"\r\n\r\n" not in response:
                         chunk = next_proxy_socket.recv(4096)
                         if not chunk:
-                            raise Exception("Connection to next proxy failed")
+                            raise ConnectionError("Connection to next proxy failed")
                         response += chunk
 
                     if b"200 Connection Established" not in response:
-                        raise Exception("Next proxy refused CONNECT")
+                        raise ConnectionRefusedError("Next proxy refused CONNECT")
 
                     server_socket = next_proxy_socket
                 else:
