@@ -43,7 +43,7 @@ class ProxyServer:
 
     def __init__(self, host, port, debug, logger_config, filter_config,
                  html_403, ssl_config, shortcuts, custom_header,
-                 flask_port, flask_pass, proxy_host, proxy_port):
+                 flask_port, flask_pass, proxy_enable, proxy_host, proxy_port):
         """
         Initialize the ProxyServer with configuration parameters.
         """
@@ -61,6 +61,7 @@ class ProxyServer:
         self.flask_pass = flask_pass
 
         # Proxy
+        self.proxy_enable=proxy_enable
         self.proxy_host=proxy_host
         self.proxy_port=proxy_port
 
@@ -235,6 +236,7 @@ class ProxyServer:
                     console_logger=self.console_logger,
                     shortcuts=self.config_shortcuts,
                     custom_header=self.config_custom_header,
+                    proxy_enable=self.proxy_enable,
                     proxy_host=self.proxy_host,
                     proxy_port=self.proxy_port,
                     active_connections=self.active_connections

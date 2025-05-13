@@ -25,6 +25,7 @@ def main():
     custom_header = get_config_value(args, config, 'custom_header', 'Options', "config/custom_header.json")
     flask_port = get_config_value(args, config, 'flask_port', 'Monitoring', 5000)
     flask_pass = get_config_value(args, config, 'flask_pass', 'Monitoring', "password")
+    proxy_enable = get_config_value(args, config, 'proxy_enable', 'Proxy', False)
     proxy_host = get_config_value(args, config, 'proxy_host', 'Proxy', "127.0.0.1")
     proxy_port = get_config_value(args, config, 'proxy_port', 'Proxy', 8081)
 
@@ -62,6 +63,7 @@ def main():
         html_403=html_403,
         shortcuts=shortcuts,
         custom_header=custom_header,
+        proxy_enable=proxy_enable,
         proxy_host=proxy_host,
         proxy_port=proxy_port
     )

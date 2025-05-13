@@ -24,7 +24,7 @@ class ProxyHandlers:
                  filter_queue, filter_result_queue, shortcuts_queue, shortcuts_result_queue,
                  cancel_inspect_queue, cancel_inspect_result_queue, custom_header_queue,
                  custom_header_result_queue, console_logger, shortcuts, custom_header,
-                 active_connections, proxy_host, proxy_port):
+                 active_connections, proxy_enable, proxy_host, proxy_port):
         self.html_403 = html_403
         self.logger_config = logger_config
         self.filter_config = filter_config
@@ -40,6 +40,7 @@ class ProxyHandlers:
         self.console_logger = console_logger
         self.config_shortcuts = shortcuts
         self.config_custom_header = custom_header
+        self.proxy_enable=proxy_enable
         self.proxy_host=proxy_host
         self.proxy_port=proxy_port
         self.active_connections = active_connections
@@ -79,6 +80,7 @@ class ProxyHandlers:
                 console_logger=self.console_logger,
                 shortcuts=self.config_shortcuts,
                 custom_header=self.config_custom_header,
+                proxy_enable=self.proxy_enable,
                 proxy_host=self.proxy_host,
                 proxy_port=self.proxy_port,
                 active_connections=self.active_connections
@@ -98,6 +100,7 @@ class ProxyHandlers:
                 console_logger=self.console_logger,
                 shortcuts=self.config_shortcuts,
                 custom_header=self.config_custom_header,
+                proxy_enable=self.proxy_enable,
                 proxy_host=self.proxy_host,
                 proxy_port=self.proxy_port,
                 active_connections=self.active_connections
