@@ -39,7 +39,8 @@ class ProxyServer:
         "shortcuts_proc", "shortcuts_queue", "shortcuts_result_queue",
         "cancel_inspect_proc", "cancel_inspect_queue", "cancel_inspect_result_queue",
         "custom_header_proc", "custom_header_queue", "custom_header_result_queue",
-        "console_logger", "access_logger", "block_logger",
+        "console_logger", "access_logger", "block_logger", "authorized_ips",
+        "active_connections"
     }
 
     def __init__(self, host, port, debug, logger_config, filter_config,

@@ -5,7 +5,7 @@ to those URLs. The proxy can handle both HTTP and HTTPS requests, and logs acces
 """
 
 from pyproxy.server import ProxyServer
-from pyproxy.utils.args import parse_args, load_config, get_config_value
+from pyproxy.utils.args import parse_args, load_config, get_config_value, str_to_bool
 from pyproxy.utils.config import ProxyConfigLogger, ProxyConfigFilter, ProxyConfigSSL
 
 # pylint: disable=C0301,R0914
@@ -33,19 +33,19 @@ def main():
     logger_config = ProxyConfigLogger(
         access_log=get_config_value(args, config, 'access_log', 'Logging', "logs/access.log"),
         block_log=get_config_value(args, config, 'block_log', 'Logging', "logs/block.log"),
-        no_logging_access=get_config_value(args, config, 'no_logging_access', 'Logging', False),
-        no_logging_block=get_config_value(args, config, 'no_logging_block', 'Logging', False)
+        no_logging_access=str_to_bool(get_config_value(args, config, 'no_logging_access', 'Logging', False)),
+        no_logging_block=str_to_bool(get_config_value(args, config, 'no_logging_block', 'Logging', False))
     )
 
     filter_config = ProxyConfigFilter(
-        no_filter=get_config_value(args, config, 'no_filter', 'Filtering', False),
+        no_filter=str_to_bool(get_config_value(args, config, 'no_filter', 'Filtering', False)),
         filter_mode=get_config_value(args, config, 'filter_mode', 'Filtering', "local"),
         blocked_sites=get_config_value(args, config, 'blocked_sites', 'Filtering', "config/blocked_sites.txt"),
         blocked_url=get_config_value(args, config, 'blocked_url', 'Filtering', "config/blocked_url.txt")
     )
 
     ssl_config = ProxyConfigSSL(
-        ssl_inspect=get_config_value(args, config, 'ssl_inspect', 'Security', False),
+        ssl_inspect=str_to_bool(get_config_value(args, config, 'ssl_inspect', 'Security', False)),
         inspect_ca_cert=get_config_value(args, config, 'inspect_ca_cert', 'Security', "certs/ca/cert.pem"),
         inspect_ca_key=get_config_value(args, config, 'inspect_ca_key', 'Security', "certs/ca/key.pem"),
         inspect_certs_folder=get_config_value(args, config, 'inspect_certs_folder', 'Security', "certs/"),
@@ -55,7 +55,7 @@ def main():
     proxy = ProxyServer(
         host=host,
         port=port,
-        debug=debug,
+        debug=str_to_bool(debug),
         logger_config=logger_config,
         filter_config=filter_config,
         ssl_config=ssl_config,
@@ -65,7 +65,7 @@ def main():
         shortcuts=shortcuts,
         custom_header=custom_header,
         authorized_ips=authorized_ips,
-        proxy_enable=proxy_enable,
+        proxy_enable=str_to_bool(proxy_enable),
         proxy_host=proxy_host,
         proxy_port=proxy_port
     )

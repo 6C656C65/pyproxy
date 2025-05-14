@@ -94,3 +94,15 @@ def get_config_value(args: argparse.Namespace, config: configparser.ConfigParser
         return env_value
 
     return config.get(section, arg_name, fallback=fallback_value)
+
+def str_to_bool(value: str) -> bool:
+    """
+    Converts a string representation of truth to a boolean value.
+
+    Args:
+        value (str): The value to convert (e.g., "true", "1", "yes").
+
+    Returns:
+        bool: True if the string represents a true value, False otherwise.
+    """
+    return str(value).lower() in ("yes", "true", "t", "1")
