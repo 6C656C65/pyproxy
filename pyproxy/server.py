@@ -15,7 +15,7 @@ import os
 import time
 import ipaddress
 
-from pyproxy.utils.version import __slim__
+from pyproxy import __slim__
 from pyproxy.utils.logger import configure_file_logger, configure_console_logger
 from pyproxy.handlers.client import ProxyHandlers
 from pyproxy.modules.filter import filter_process

@@ -76,12 +76,11 @@ jobs:
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Get version from version.py
+      - name: Get version
         id: get_version
         run: |
-          VERSION=$(python -c "from pyproxy.utils.version import __version__; print(__version__)")
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
-          echo "Docker tag version: $VERSION"
+          version=$(grep '^__version__' pyproxy/__init__.py | cut -d'"' -f2)
+          echo "version=${version}" >> $GITHUB_ENV
 
       - name: Convert repository owner to lowercase
         run: echo "REPO_OWNER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
@@ -115,11 +114,11 @@ jobs:
         with:
           python-version: 3.13
 
-      - name: Get version from version.py
+      - name: Get version
         id: get_version
         run: |
-          VERSION=$(python -c "from pyproxy.utils.version import __version__; print(__version__)")
-          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          version=$(grep '^__version__' pyproxy/__init__.py | cut -d'"' -f2)
+          echo "version=${version}" >> $GITHUB_OUTPUT
 
       - name: Create Tag
         run: |

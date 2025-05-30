@@ -8,7 +8,7 @@ import configparser
 import argparse
 import os
 from rich_argparse import MetavarTypeRichHelpFormatter
-from pyproxy.utils.version import __version__
+from pyproxy import __version__
 
 
 def parse_args() -> argparse.Namespace:
