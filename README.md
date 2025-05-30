@@ -15,9 +15,8 @@
   <img src="https://img.shields.io/github/commit-activity/w/6C656C65/pyproxy?style=for-the-badge">
   <img src="https://img.shields.io/github/contributors/6C656C65/pyproxy?style=for-the-badge">
   <br>
-  <img src="https://img.shields.io/github/actions/workflow/status/6C656C65/pyproxy/code-scan.yml?label=Scan&style=for-the-badge">
-  <img src="https://img.shields.io/github/actions/workflow/status/6C656C65/pyproxy/unittest.yml?label=Tests&style=for-the-badge">
-  <img src="https://img.shields.io/github/actions/workflow/status/6C656C65/pyproxy/docker-images.yml?label=Delivery&style=for-the-badge">
+  <img src="https://img.shields.io/pypi/v/pyproxytools?style=for-the-badge">
+  <img src="https://img.shields.io/pypi/pyversions/pyproxytools?style=for-the-badge">
 </p>
 
 ---
