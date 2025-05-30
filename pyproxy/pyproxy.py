@@ -4,9 +4,9 @@ It listens for client requests, filters URLs based on a list, and allows or bloc
 to those URLs. The proxy can handle both HTTP and HTTPS requests, and logs access and block events.
 """
 
-from pyproxy.server import ProxyServer
-from pyproxy.utils.args import parse_args, load_config, get_config_value, str_to_bool
-from pyproxy.utils.config import ProxyConfigLogger, ProxyConfigFilter, ProxyConfigSSL
+from .server import ProxyServer
+from .utils.args import parse_args, load_config, get_config_value, str_to_bool
+from .utils.config import ProxyConfigLogger, ProxyConfigFilter, ProxyConfigSSL
 
 def main():
     """

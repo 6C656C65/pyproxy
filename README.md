@@ -60,7 +60,7 @@ You can use slim images by adding `-slim` to the end of the tags
 
 ### Start the proxy
 ```bash
-python3 pyproxy.py
+python3 -m pyproxy.pyproxy
 ```
 The proxy will be available at: `0.0.0.0:8080`.
 The access log will be available at `./logs/access.log`.

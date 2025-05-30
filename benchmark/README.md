@@ -19,7 +19,7 @@ pip install -r benchmark/requirements.txt
 ### Start the Proxy
 Before running the benchmark, ensure that **pyproxy** is running. Start the proxy by running:
 ```bash
-python3 pyproxy.py
+python3 -m pyproxy.pyproxy
 ```
 The proxy will be available at `0.0.0.0:8080`.
 

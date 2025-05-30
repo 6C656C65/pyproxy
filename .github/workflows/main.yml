@@ -98,3 +98,60 @@ jobs:
           docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest-slim
           docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}
           docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest
+
+  build-packages:
+    needs: unittest
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13
+
+      - name: Get version from version.py
+        id: get_version
+        run: |
+          VERSION=$(python -c "from pyproxy.utils.version import __version__; print(__version__)")
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Create Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag v${{ steps.get_version.outputs.version }}
+          git push origin v${{ steps.get_version.outputs.version }}
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          release_name: Release v${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install build dependencies
+        run: pip install --no-cache-dir -U pip . build
+
+      - name: Build package
+        run: python -m build --sdist --wheel
+      - name: Upload built distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Install release dependencies
+        run: pip install --no-cache-dir -U pip . twine packaging
+
+      - name: Upload to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

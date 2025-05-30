@@ -13,4 +13,4 @@ WORKDIR /app
 COPY --from=builder /usr/local /usr/local
 COPY --from=builder /app /app
 EXPOSE 8080
-ENTRYPOINT ["python3", "pyproxy.py"]
+ENTRYPOINT ["python3", "-m", "pyproxy.pyproxy"]
