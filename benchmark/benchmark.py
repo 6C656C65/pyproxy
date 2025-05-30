@@ -1,5 +1,5 @@
 """
-This module provides a set of functions to benchmark the performance of a proxy server 
+This module provides a set of functions to benchmark the performance of a proxy server
 by comparing the response times for HTTP requests sent with and without the use of a proxy.
 """
 
@@ -11,6 +11,7 @@ from datetime import datetime
 import pandas as pd
 from utils.req import send_request_with_proxy, send_request_without_proxy
 from utils.html import create_combined_html_report
+
 
 def benchmark(url: str, proxy: str, num_requests: int) -> tuple:
     """
@@ -56,50 +57,50 @@ def benchmark(url: str, proxy: str, num_requests: int) -> tuple:
         "max_with_proxy": max(times_with_proxy),
     }
 
-    results = pd.DataFrame({
-        'Request Number': range(1, num_requests + 1),
-        'Without Proxy': times_without_proxy,
-        'With Proxy': times_with_proxy
-    })
+    results = pd.DataFrame(
+        {
+            "Request Number": range(1, num_requests + 1),
+            "Without Proxy": times_without_proxy,
+            "With Proxy": times_with_proxy,
+        }
+    )
 
     return stats, results
 
+
 def main() -> None:
     """
-    Main function to parse command-line arguments, run benchmarks, and generate the report. 
+    Main function to parse command-line arguments, run benchmarks, and generate the report.
     It either benchmarks a single URL or a list of URLs from a file.
-    
+
     Returns:
         None
     """
     parser = argparse.ArgumentParser(description="Proxy performance benchmark.")
     parser.add_argument(
-        '--proxy-url',
+        "--proxy-url",
         type=str,
         default="http://localhost:8080",
-        help="The proxy URL to use"
+        help="The proxy URL to use",
     )
     parser.add_argument(
-        '--target-url',
+        "--target-url",
         type=str,
-        help="A single URL to test (e.g., http://example.com)"
+        help="A single URL to test (e.g., http://example.com)",
     )
     parser.add_argument(
-        '--target-file',
+        "--target-file",
         type=str,
-        help="A file containing a list of URLs to test"
+        help="A file containing a list of URLs to test",
     )
     parser.add_argument(
-        '--num-requests',
+        "--num-requests",
         type=int,
         default=10,
-        help="Number of requests to send (default: 10)"
+        help="Number of requests to send (default: 10)",
     )
     parser.add_argument(
-        '--output-dir',
-        type=str,
-        default="benchmark/outputs",
-        help="Output directory"
+        "--output-dir", type=str, default="benchmark/outputs", help="Output directory"
     )
     args = parser.parse_args()
 
@@ -118,7 +119,7 @@ def main() -> None:
             print(f"Error: the file {args.target_file} does not exist.")
             sys.exit(1)
 
-        with open(args.target_file, 'r', encoding="utf-8") as f:
+        with open(args.target_file, "r", encoding="utf-8") as f:
             urls = [line.strip() for line in f if line.strip()]
 
         for url in urls:
@@ -133,26 +134,32 @@ def main() -> None:
     avg_with_proxy_list = []
 
     for stats, _ in all_results.values():
-        avg_without_proxy_list.append(stats['avg_without_proxy'])
-        avg_with_proxy_list.append(stats['avg_with_proxy'])
+        avg_without_proxy_list.append(stats["avg_without_proxy"])
+        avg_with_proxy_list.append(stats["avg_with_proxy"])
 
     global_avg_without_proxy = sum(avg_without_proxy_list) / len(avg_without_proxy_list)
     global_avg_with_proxy = sum(avg_with_proxy_list) / len(avg_with_proxy_list)
 
     percentage_change = (
-        (global_avg_with_proxy - global_avg_without_proxy) /
-        global_avg_without_proxy
+        (global_avg_with_proxy - global_avg_without_proxy) / global_avg_without_proxy
     ) * 100
 
     print(f"Global average without proxy: {global_avg_without_proxy:.6f} seconds")
     print(f"Global average with proxy: {global_avg_with_proxy:.6f} seconds")
-    print(f"Impact: {'Improvement' if percentage_change < 0 else 'Slowdown'} of "
-          f"{abs(percentage_change):.2f}%")
+    print(
+        f"Impact: {'Improvement' if percentage_change < 0 else 'Slowdown'} of "
+        f"{abs(percentage_change):.2f}%"
+    )
 
     create_combined_html_report(
-        all_results, global_avg_without_proxy, global_avg_with_proxy,
-        percentage_change, args.output_dir, timestamp
+        all_results,
+        global_avg_without_proxy,
+        global_avg_with_proxy,
+        percentage_change,
+        args.output_dir,
+        timestamp,
     )
+
 
 if __name__ == "__main__":
     main()

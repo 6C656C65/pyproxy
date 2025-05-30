@@ -17,37 +17,36 @@ import sys
 import threading
 import json
 
+
 def load_custom_header(custom_header_path: str) -> dict:
     """
     Loads custom header entries from a file into a list.
-    
+
     Args:
         custom_header_path (str): The path to the file containing the custom headers.
-    
+
     Returns:
         dict: A dictionary containing the custom header data loaded from the file.
     """
-    with open(custom_header_path, 'r', encoding='utf-8') as f:
+    with open(custom_header_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
-# pylint: disable=too-many-locals
+
 def custom_header_process(
     queue: multiprocessing.Queue,
     result_queue: multiprocessing.Queue,
-    custom_header_path: str
+    custom_header_path: str,
 ) -> None:
     """
     Process that monitors the custom header file and checks if received entries exist in it.
-    
+
     Args:
         queue (multiprocessing.Queue): A queue to receive header-like entries to check.
         result_queue (multiprocessing.Queue): A queue to send back True/False depending on match.
         custom_header_path (str): Path to the file containing custom header entries.
     """
     manager = multiprocessing.Manager()
-    custom_header_data = manager.dict(
-        load_custom_header(custom_header_path)
-    )
+    custom_header_data = manager.dict(load_custom_header(custom_header_path))
 
     error_event = threading.Event()
 

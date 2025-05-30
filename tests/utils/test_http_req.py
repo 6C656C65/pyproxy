@@ -7,6 +7,7 @@ This module contains unit tests for the `http_req.py` module in the `pyproxy.uti
 import unittest
 from pyproxy.utils.http_req import extract_headers, parse_url
 
+
 class TestHttpReq(unittest.TestCase):
     """
     Test suite for the HTTP request utilities.
@@ -27,7 +28,7 @@ Accept: */*
         expected_headers = {
             "Host": "example.com",
             "User-Agent": "Mozilla/5.0",
-            "Accept": "*/*"
+            "Accept": "*/*",
         }
 
         headers = extract_headers(request_str)
@@ -63,5 +64,6 @@ Accept: */*
         self.assertEqual(host, expected_host)
         self.assertEqual(port, expected_port)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

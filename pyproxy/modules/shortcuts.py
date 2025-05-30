@@ -15,19 +15,20 @@ import time
 import sys
 import threading
 
+
 def load_shortcuts(shortcuts_path: str) -> dict:
     """
     Loads URL alias mappings from a file into a dictionary for fast lookup.
-    
+
     Args:
         shortcuts_path (str): The path to the file containing alias=URL mappings.
-    
+
     Returns:
         dict: A dictionary mapping aliases to URLs.
     """
     shortcuts = {}
 
-    with open(shortcuts_path, 'r', encoding='utf-8') as f:
+    with open(shortcuts_path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if "=" in line:
@@ -36,24 +37,22 @@ def load_shortcuts(shortcuts_path: str) -> dict:
 
     return shortcuts
 
-# pylint: disable=too-many-locals
+
 def shortcuts_process(
     queue: multiprocessing.Queue,
     result_queue: multiprocessing.Queue,
-    shortcuts_path: str
+    shortcuts_path: str,
 ) -> None:
     """
     Process that listens for alias requests and resolves them to URLs.
-    
+
     Args:
         queue (multiprocessing.Queue): A queue to receive alias for URL resolution.
         result_queue (multiprocessing.Queue): A queue to send back the resolved URL.
         shortcuts_path (str): The path to the file containing alias=URL mappings.
     """
     manager = multiprocessing.Manager()
-    shortcuts_data = manager.dict({
-        "shortcuts": load_shortcuts(shortcuts_path)
-    })
+    shortcuts_data = manager.dict({"shortcuts": load_shortcuts(shortcuts_path)})
 
     error_event = threading.Event()
 

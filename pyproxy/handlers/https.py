@@ -14,7 +14,7 @@ import threading
 
 from pyproxy.utils.crypto import generate_certificate
 
-# pylint: disable=R0914
+
 class HttpsHandler:
     """
     Handles HTTPS client connections for a proxy server.
@@ -23,11 +23,29 @@ class HttpsHandler:
     processes HTTPS `CONNECT` requests and either tunnels them directly to the destination
     or performs SSL interception for inspection and filtering.
     """
-    def __init__(self, html_403, logger_config, filter_config, ssl_config,
-                 filter_queue, filter_result_queue, shortcuts_queue, shortcuts_result_queue,
-                 cancel_inspect_queue, cancel_inspect_result_queue, custom_header_queue,
-                 custom_header_result_queue, console_logger, shortcuts, custom_header,
-                 active_connections, proxy_enable, proxy_host, proxy_port):
+
+    def __init__(
+        self,
+        html_403,
+        logger_config,
+        filter_config,
+        ssl_config,
+        filter_queue,
+        filter_result_queue,
+        shortcuts_queue,
+        shortcuts_result_queue,
+        cancel_inspect_queue,
+        cancel_inspect_result_queue,
+        custom_header_queue,
+        custom_header_result_queue,
+        console_logger,
+        shortcuts,
+        custom_header,
+        active_connections,
+        proxy_enable,
+        proxy_host,
+        proxy_port,
+    ):
         self.html_403 = html_403
         self.logger_config = logger_config
         self.filter_config = filter_config
@@ -43,17 +61,16 @@ class HttpsHandler:
         self.console_logger = console_logger
         self.config_shortcuts = shortcuts
         self.config_custom_header = custom_header
-        self.proxy_enable=proxy_enable
-        self.proxy_host=proxy_host
-        self.proxy_port=proxy_port
+        self.proxy_enable = proxy_enable
+        self.proxy_host = proxy_host
+        self.proxy_port = proxy_port
         self.active_connections = active_connections
 
-    # pylint: disable=too-many-locals,too-many-statements,too-many-branches,too-many-nested-blocks
     def handle_https_connection(self, client_socket, first_line):
         """
-        Handles HTTPS connections by establishing a connection with the target server 
+        Handles HTTPS connections by establishing a connection with the target server
         and relaying data between the client and server.
-        
+
         Args:
             client_socket (socket): The socket object for the client connection.
             first_line (str): The first line of the CONNECT request from the client.
@@ -71,9 +88,9 @@ class HttpsHandler:
                         "%s - %s - %s",
                         client_socket.getpeername()[0],
                         target,
-                        first_line
+                        first_line,
                     )
-                with open(self.html_403, "r", encoding='utf-8') as f:
+                with open(self.html_403, "r", encoding="utf-8") as f:
                     custom_403_page = f.read()
                 response = (
                     f"HTTP/1.1 403 Forbidden\r\n"
@@ -100,27 +117,26 @@ class HttpsHandler:
                 server_host,
                 self.ssl_config.inspect_certs_folder,
                 self.ssl_config.inspect_ca_cert,
-                self.ssl_config.inspect_ca_key
+                self.ssl_config.inspect_ca_key,
             )
             client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
             client_context.load_cert_chain(certfile=cert_path, keyfile=key_path)
             client_context.options |= (
-                ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 |
-                ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
+                ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
             )
             client_context.load_verify_locations(self.ssl_config.inspect_ca_cert)
 
             try:
                 client_socket.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
                 ssl_client_socket = client_context.wrap_socket(
-                    client_socket,
-                    server_side=True,
-                    do_handshake_on_connect=False
+                    client_socket, server_side=True, do_handshake_on_connect=False
                 )
                 ssl_client_socket.do_handshake()
 
                 if self.proxy_enable:
-                    next_proxy_socket = socket.create_connection((self.proxy_host, self.proxy_port))
+                    next_proxy_socket = socket.create_connection(
+                        (self.proxy_host, self.proxy_port)
+                    )
                     connect_command = (
                         f"CONNECT {server_host}:{server_port} HTTP/1.1\r\n"
                         f"Host: {server_host}:{server_port}\r\n\r\n"
@@ -151,7 +167,7 @@ class HttpsHandler:
                 ssl_server_socket = server_context.wrap_socket(
                     server_socket,
                     server_hostname=server_host,
-                    do_handshake_on_connect=True
+                    do_handshake_on_connect=True,
                 )
 
                 try:
@@ -170,9 +186,9 @@ class HttpsHandler:
                                     "%s - %s - %s",
                                     ssl_client_socket.getpeername()[0],
                                     target,
-                                    first_line
+                                    first_line,
                                 )
-                            with open(self.html_403, "r", encoding='utf-8') as f:
+                            with open(self.html_403, "r", encoding="utf-8") as f:
                                 custom_403_page = f.read()
                             response = (
                                 f"HTTP/1.1 403 Forbidden\r\n"
@@ -191,7 +207,7 @@ class HttpsHandler:
                             ssl_client_socket.getpeername()[0],
                             f"https://{server_host}",
                             method,
-                            full_url
+                            full_url,
                         )
 
                     ssl_server_socket.sendall(first_request.encode())
@@ -224,11 +240,18 @@ class HttpsHandler:
                         "%s - %s - %s",
                         client_socket.getpeername()[0],
                         f"https://{server_host}",
-                        first_line
+                        first_line,
                     )
                 self.transfer_data_between_sockets(client_socket, server_socket)
-            except (socket.timeout, socket.gaierror, ConnectionRefusedError, OSError) as e:
-                self.console_logger.error("Error connecting to the server %s: %s", server_host, e)
+            except (
+                socket.timeout,
+                socket.gaierror,
+                ConnectionRefusedError,
+                OSError,
+            ) as e:
+                self.console_logger.error(
+                    "Error connecting to the server %s: %s", server_host, e
+                )
                 response = (
                     f"HTTP/1.1 502 Bad Gateway\r\n"
                     f"Content-Length: {len('Bad Gateway')} \r\n"
@@ -241,7 +264,7 @@ class HttpsHandler:
     def transfer_data_between_sockets(self, client_socket, server_socket):
         """
         Transfers data between the client socket and server socket.
-        
+
         Args:
             client_socket (socket): The socket object for the client connection.
             server_socket (socket): The socket object for the server connection.
@@ -250,8 +273,8 @@ class HttpsHandler:
         thread_id = threading.get_ident()
 
         if (
-            thread_id in self.active_connections and
-            "target_ip" not in self.active_connections[thread_id]
+            thread_id in self.active_connections
+            and "target_ip" not in self.active_connections[thread_id]
         ):
             try:
                 target_ip, target_port = server_socket.getpeername()
@@ -276,7 +299,9 @@ class HttpsHandler:
                         self.active_connections[thread_id]["bytes_sent"] += len(data)
                     else:
                         client_socket.sendall(data)
-                        self.active_connections[thread_id]["bytes_received"] += len(data)
+                        self.active_connections[thread_id]["bytes_received"] += len(
+                            data
+                        )
         except (socket.error, OSError):
             client_socket.close()
             server_socket.close()

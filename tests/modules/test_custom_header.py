@@ -21,18 +21,12 @@ from pyproxy.modules.custom_header import load_custom_header, custom_header_proc
 class TestCustomHeader(unittest.TestCase):
     """Unit tests for the custom_header.py module."""
 
-    # pylint: disable=R1732
     def setUp(self):
         """Set up a temporary JSON file with test data for custom headers."""
-        self.temp_file = tempfile.NamedTemporaryFile(mode='w+', delete=False)
+        self.temp_file = tempfile.NamedTemporaryFile(mode="w+", delete=False)
         self.sample_data = {
-            "http://example.com": {
-                "X-Test-Header": "123",
-                "X-Another": "456"
-            },
-            "http://another.com": {
-                "X-Custom": "abc"
-            }
+            "http://example.com": {"X-Test-Header": "123", "X-Another": "456"},
+            "http://another.com": {"X-Custom": "abc"},
         }
         json.dump(self.sample_data, self.temp_file)
         self.temp_file.close()
@@ -54,8 +48,7 @@ class TestCustomHeader(unittest.TestCase):
         result_queue = multiprocessing.Queue()
 
         process = multiprocessing.Process(
-            target=custom_header_process,
-            args=(queue, result_queue, self.path)
+            target=custom_header_process, args=(queue, result_queue, self.path)
         )
         process.start()
 
@@ -63,10 +56,7 @@ class TestCustomHeader(unittest.TestCase):
 
         queue.put("http://example.com")
         result = result_queue.get(timeout=3)
-        self.assertEqual(result, {
-            "X-Test-Header": "123",
-            "X-Another": "456"
-        })
+        self.assertEqual(result, {"X-Test-Header": "123", "X-Another": "456"})
 
         queue.put("http://nonexistent.com")
         result = result_queue.get(timeout=3)
@@ -76,5 +66,5 @@ class TestCustomHeader(unittest.TestCase):
         process.join()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

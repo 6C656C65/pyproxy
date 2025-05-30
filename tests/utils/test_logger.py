@@ -11,12 +11,12 @@ import os
 from unittest.mock import patch, MagicMock
 from pyproxy.utils.logger import configure_console_logger, configure_file_logger
 
+
 class TestLogger(unittest.TestCase):
     """
     Test suite for the logger module.
     """
 
-    # pylint: disable=unused-argument
     @patch("sys.stdout")
     def test_configure_console_logger(self, mock_stdout):
         """
@@ -63,5 +63,6 @@ class TestLogger(unittest.TestCase):
         if os.path.exists(log_file):
             os.remove(log_file)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

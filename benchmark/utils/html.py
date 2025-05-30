@@ -8,14 +8,15 @@ import plotly.graph_objects as go
 
 TEMPLATE_PATH = "benchmark/templates/report_template.html"
 
+
 def generate_combined_table(all_results: dict) -> str:
     """
     Generates a single HTML table combining statistics for all
     URLs with sub-columns for avg, min, and max.
-    
+
     Args:
         all_results (dict): A dictionary containing the results for each URL.
-    
+
     Returns:
         str: The HTML table as a string.
     """
@@ -64,14 +65,15 @@ def generate_combined_table(all_results: dict) -> str:
 
     return table_html
 
+
 def prepare_filenames(output_dir: str, timestamp: str) -> dict:
     """
     Prepares the filenames for the report and plotly files.
-    
+
     Args:
         output_dir (str): The directory to save the report in.
         timestamp (str): The timestamp to use in filenames.
-        
+
     Returns:
         dict: A dictionary containing the plotly and html file paths.
     """
@@ -83,10 +85,7 @@ def prepare_filenames(output_dir: str, timestamp: str) -> dict:
     plotly_filepath = os.path.join(output_dir, plotly_filename)
     html_filepath = os.path.join(output_dir, html_filename)
 
-    return {
-        "plotly": plotly_filepath,
-        "html": html_filepath
-    }
+    return {"plotly": plotly_filepath, "html": html_filepath}
 
 
 def render_template(template_path: str, context: dict) -> str:
@@ -104,10 +103,17 @@ def render_template(template_path: str, context: dict) -> str:
         template = f.read()
     return template.format(**context)
 
-def create_combined_html_report(all_results: dict, avg_without_proxy: float, avg_with_proxy: float,
-                                 percentage_change: float, output_dir: str, timestamp: str) -> None:
+
+def create_combined_html_report(
+    all_results: dict,
+    avg_without_proxy: float,
+    avg_with_proxy: float,
+    percentage_change: float,
+    output_dir: str,
+    timestamp: str,
+) -> None:
     """
-    Generates an HTML report with the benchmark results, including graphs and statistics. 
+    Generates an HTML report with the benchmark results, including graphs and statistics.
     Saves the report to the specified output directory.
 
     Args:
@@ -118,7 +124,7 @@ def create_combined_html_report(all_results: dict, avg_without_proxy: float, avg
                     between requests with and without a proxy.
         output_dir (str): The directory to save the report in.
         timestamp (str): The timestamp to use in filenames.
-        
+
     Returns:
         None
     """
@@ -127,14 +133,28 @@ def create_combined_html_report(all_results: dict, avg_without_proxy: float, avg
     filenames = prepare_filenames(output_dir, timestamp)
 
     for url, (_, results) in all_results.items():
-        fig.add_trace(go.Scatter(x=results['Request Number'], y=results['Without Proxy'],
-                                 mode='lines+markers', name=f'Without Proxy - {url}'))
-        fig.add_trace(go.Scatter(x=results['Request Number'], y=results['With Proxy'],
-                                 mode='lines+markers', name=f'With Proxy - {url}'))
+        fig.add_trace(
+            go.Scatter(
+                x=results["Request Number"],
+                y=results["Without Proxy"],
+                mode="lines+markers",
+                name=f"Without Proxy - {url}",
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=results["Request Number"],
+                y=results["With Proxy"],
+                mode="lines+markers",
+                name=f"With Proxy - {url}",
+            )
+        )
 
-    fig.update_layout(title="Response Time per Request (All URLs)",
-                      xaxis_title="Request Number",
-                      yaxis_title="Response Time (seconds)")
+    fig.update_layout(
+        title="Response Time per Request (All URLs)",
+        xaxis_title="Request Number",
+        yaxis_title="Response Time (seconds)",
+    )
 
     fig.write_html(filenames["plotly"])
 

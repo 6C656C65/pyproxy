@@ -19,7 +19,7 @@ benchmark/
 .gitignore
 .git
 .gitattributes
-.pylintrc
+.flake8
 .readthedocs.yaml
 CHANGELOG.md
 CONTRIBUTING.md

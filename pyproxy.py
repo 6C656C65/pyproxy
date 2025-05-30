@@ -8,7 +8,6 @@ from pyproxy.server import ProxyServer
 from pyproxy.utils.args import parse_args, load_config, get_config_value, str_to_bool
 from pyproxy.utils.config import ProxyConfigLogger, ProxyConfigFilter, ProxyConfigSSL
 
-# pylint: disable=C0301,R0914
 def main():
     """
     Main entry point of the proxy server. It parses command-line arguments, loads the configuration file, 

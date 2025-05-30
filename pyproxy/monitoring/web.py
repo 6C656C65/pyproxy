@@ -18,7 +18,8 @@ from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import check_password_hash, generate_password_hash
 import psutil
 
-def start_flask_server(proxy_server: 'ProxyServer', flask_port, flask_pass, debug) -> None:
+
+def start_flask_server(proxy_server, flask_port, flask_pass, debug) -> None:
     """
     Starts the Flask server for monitoring the ProxyServer. It creates and
     runs an HTTP server that exposes the proxy server's status, including
@@ -40,10 +41,13 @@ def start_flask_server(proxy_server: 'ProxyServer', flask_port, flask_pass, debu
         Args:
             proxy_server (ProxyServer): The ProxyServer instance to monitor.
         """
+
         def __init__(self, proxy_server):
             self.proxy_server = proxy_server
 
-        def get_process_info(self) -> Dict[str, Union[int, str, List[Dict[str, Union[int, str]]]]]:
+        def get_process_info(
+            self,
+        ) -> Dict[str, Union[int, str, List[Dict[str, Union[int, str]]]]]:
             """
             Retrieves overall process information for the ProxyServer,
             including the PID, name, status, and details about threads,
@@ -53,18 +57,17 @@ def start_flask_server(proxy_server: 'ProxyServer', flask_port, flask_pass, debu
                 dict: A dictionary containing the process information.
             """
             process_info = {
-                'pid': os.getpid(),
-                'name': 'ProxyServer',
-                'status': 'running',
-                'start_time': datetime.fromtimestamp(
+                "pid": os.getpid(),
+                "name": "ProxyServer",
+                "status": "running",
+                "start_time": datetime.fromtimestamp(
                     psutil.Process(os.getpid()).create_time()
-                ).strftime('%Y-%m-%d %H:%M:%S'),
-                'threads': self.get_threads_info(),
-                'subprocesses': self.get_subprocesses_info(),
-                'active_connections': self.get_active_connections()
+                ).strftime("%Y-%m-%d %H:%M:%S"),
+                "threads": self.get_threads_info(),
+                "subprocesses": self.get_subprocesses_info(),
+                "active_connections": self.get_active_connections(),
             }
             return process_info
-
 
         def get_threads_info(self) -> List[Dict[str, Union[int, str]]]:
             """
@@ -76,13 +79,14 @@ def start_flask_server(proxy_server: 'ProxyServer', flask_port, flask_pass, debu
             """
             threads_info = []
             for thread in threading.enumerate():
-                threads_info.append({
-                    'thread_id': thread.ident,
-                    'name': thread.name,
-                    'status': self.get_thread_status(thread)
-                })
+                threads_info.append(
+                    {
+                        "thread_id": thread.ident,
+                        "name": thread.name,
+                        "status": self.get_thread_status(thread),
+                    }
+                )
             return threads_info
-
 
         def get_thread_status(self, thread: threading.Thread) -> str:
             """
@@ -96,15 +100,14 @@ def start_flask_server(proxy_server: 'ProxyServer', flask_port, flask_pass, debu
             """
             try:
                 if thread.is_alive():
-                    return 'running'
-                return 'terminated'
+                    return "running"
+                return "terminated"
             except AttributeError:
-                return 'unknown'
+                return "unknown"
 
-        def get_subprocesses_info(self) -> Dict[
-            str,
-            Dict[str, Union[str, List[Dict[str, Union[int, str]]]]]
-        ]:
+        def get_subprocesses_info(
+            self,
+        ) -> Dict[str, Dict[str, Union[str, List[Dict[str, Union[int, str]]]]]]:
             """
             Retrieves the status of the ProxyServer's subprocesses, including
             filtering, shortcuts, cancel inspection, and custom header processes.
@@ -115,10 +118,10 @@ def start_flask_server(proxy_server: 'ProxyServer', flask_port, flask_pass, debu
             subprocesses_info = {}
 
             subprocesses = {
-                'filter': self.proxy_server.filter_proc,
-                'shortcuts': self.proxy_server.shortcuts_proc,
-                'cancel_inspect': self.proxy_server.cancel_inspect_proc,
-                'custom_header': self.proxy_server.custom_header_proc
+                "filter": self.proxy_server.filter_proc,
+                "shortcuts": self.proxy_server.shortcuts_proc,
+                "cancel_inspect": self.proxy_server.cancel_inspect_proc,
+                "custom_header": self.proxy_server.custom_header_proc,
             }
 
             for name, process in subprocesses.items():
@@ -127,9 +130,7 @@ def start_flask_server(proxy_server: 'ProxyServer', flask_port, flask_pass, debu
             return subprocesses_info
 
         def get_subprocess_status(
-            self,
-            process: multiprocessing.Process,
-            name: str
+            self, process: multiprocessing.Process, name: str
         ) -> Dict[str, Union[str, None, List[Dict[str, Union[int, str]]]]]:
             """
             Retrieves the status of a subprocess.
@@ -142,23 +143,22 @@ def start_flask_server(proxy_server: 'ProxyServer', flask_port, flask_pass, debu
                 dict: A dictionary containing the subprocess status.
             """
             if process is None:
-                return {'status': 'not started', 'name': name, 'threads': []}
+                return {"status": "not started", "name": name, "threads": []}
             try:
-                status = 'running' if process.is_alive() else 'terminated'
+                status = "running" if process.is_alive() else "terminated"
                 threads_info = self.get_subprocess_threads_info(process)
             except AttributeError:
-                status = 'terminated'
+                status = "terminated"
                 threads_info = []
             return {
-                'pid': process.pid if hasattr(process, 'pid') else None,
-                'status': status,
-                'name': name,
-                'threads': threads_info
+                "pid": process.pid if hasattr(process, "pid") else None,
+                "status": status,
+                "name": name,
+                "threads": threads_info,
             }
 
         def get_subprocess_threads_info(
-            self,
-            process: multiprocessing.Process
+            self, process: multiprocessing.Process
         ) -> List[Dict[str, Union[int, str]]]:
             """
             Retrieves the threads associated with a subprocess.
@@ -172,11 +172,13 @@ def start_flask_server(proxy_server: 'ProxyServer', flask_port, flask_pass, debu
             threads_info = []
             try:
                 for proc_thread in psutil.Process(process.pid).threads():
-                    threads_info.append({
-                        'thread_id': proc_thread.id,
-                        'name': f"Thread-{proc_thread.id}",
-                        'status': self.get_thread_status_by_pid(proc_thread.id)
-                    })
+                    threads_info.append(
+                        {
+                            "thread_id": proc_thread.id,
+                            "name": f"Thread-{proc_thread.id}",
+                            "status": self.get_thread_status_by_pid(proc_thread.id),
+                        }
+                    )
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
             return threads_info
@@ -207,18 +209,13 @@ def start_flask_server(proxy_server: 'ProxyServer', flask_port, flask_pass, debu
                 list: A list of dictionaries containing information about active connections.
             """
             return [
-                {
-                    'thread_id': thread_id,
-                    **conn
-                }
+                {"thread_id": thread_id, **conn}
                 for thread_id, conn in self.proxy_server.active_connections.items()
             ]
 
     auth = HTTPBasicAuth()
 
-    users = {
-        "admin": generate_password_hash(flask_pass)
-    }
+    users = {"admin": generate_password_hash(flask_pass)}
 
     @auth.verify_password
     def verify_password(username, password):
@@ -226,12 +223,12 @@ def start_flask_server(proxy_server: 'ProxyServer', flask_port, flask_pass, debu
             return username
         return None
 
-    app = Flask(__name__, static_folder='static')
+    app = Flask(__name__, static_folder="static")
     if not debug:
-        log = logging.getLogger('werkzeug')
+        log = logging.getLogger("werkzeug")
         log.setLevel(logging.ERROR)
 
-    @app.route('/')
+    @app.route("/")
     @auth.login_required
     def index():
         """
@@ -240,9 +237,9 @@ def start_flask_server(proxy_server: 'ProxyServer', flask_port, flask_pass, debu
         Returns:
             str: The rendered HTML content of the index page.
         """
-        return render_template('index.html')
+        return render_template("index.html")
 
-    @app.route('/monitoring', methods=['GET'])
+    @app.route("/monitoring", methods=["GET"])
     @auth.login_required
     def monitoring():
         """
@@ -254,28 +251,29 @@ def start_flask_server(proxy_server: 'ProxyServer', flask_port, flask_pass, debu
         monitor = ProxyMonitor(proxy_server)
         return jsonify(monitor.get_process_info())
 
-    @app.route('/config', methods=['GET'])
+    @app.route("/config", methods=["GET"])
     @auth.login_required
     def config():
         config_data = {
-            'host': proxy_server.host_port[0],
-            'port': proxy_server.host_port[1],
-            'debug': proxy_server.debug,
-            'html_403': proxy_server.html_403,
-            'logger_config': (
+            "host": proxy_server.host_port[0],
+            "port": proxy_server.host_port[1],
+            "debug": proxy_server.debug,
+            "html_403": proxy_server.html_403,
+            "logger_config": (
                 proxy_server.logger_config.to_dict()
-                if proxy_server.logger_config else None
+                if proxy_server.logger_config
+                else None
             ),
-            'filter_config': (
+            "filter_config": (
                 proxy_server.filter_config.to_dict()
-                if proxy_server.filter_config else None
+                if proxy_server.filter_config
+                else None
             ),
-            'ssl_config': (
-                proxy_server.ssl_config.to_dict()
-                if proxy_server.ssl_config else None
+            "ssl_config": (
+                proxy_server.ssl_config.to_dict() if proxy_server.ssl_config else None
             ),
-            'flask_port': proxy_server.flask_port
+            "flask_port": proxy_server.flask_port,
         }
         return jsonify(config_data)
 
-    app.run(host='0.0.0.0', port=flask_port) # nosec
+    app.run(host="0.0.0.0", port=flask_port)  # nosec

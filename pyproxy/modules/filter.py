@@ -2,7 +2,7 @@
 pyproxy.modules.filter.py
 
 This module contains functions and a process to filter and block domains and URLs.
-It loads blocked domain names and URLs from specified files, then listens for 
+It loads blocked domain names and URLs from specified files, then listens for
 incoming requests to check if the domain or URL should be blocked.
 
 Functions:
@@ -17,15 +17,18 @@ import threading
 from urllib.parse import urlparse
 import requests
 
-def load_blacklist(blocked_sites_path: str, blocked_url_path: str, filter_mode: str) -> set:
+
+def load_blacklist(
+    blocked_sites_path: str, blocked_url_path: str, filter_mode: str
+) -> set:
     """
     Loads blocked FQDNs or URLs from a file or URL into a set for fast lookup.
-    
+
     Args:
         blocked_sites_path (str): The path or URL to the file containing blocked FQDNs.
         blocked_url_path (str): The path or URL to the file containing blocked URLs.
         filter_mode (str): Mode to determine if we load from local file or HTTP URL.
-    
+
     Returns:
         set: A set of blocked domains/URLs.
     """
@@ -34,7 +37,7 @@ def load_blacklist(blocked_sites_path: str, blocked_url_path: str, filter_mode: 
 
     def load_from_file(file_path: str) -> set:
         data = set()
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             for line in f:
                 data.add(line.strip())
         return data
@@ -47,7 +50,9 @@ def load_blacklist(blocked_sites_path: str, blocked_url_path: str, filter_mode: 
             for line in response.text.splitlines():
                 data.add(line.strip())
         except requests.exceptions.RequestException as e:
-            raise requests.exceptions.RequestException(f"Failed to load data from {url}: {e}")
+            raise requests.exceptions.RequestException(
+                f"Failed to load data from {url}: {e}"
+            )
         return data
 
     if filter_mode == "local":
@@ -59,18 +64,18 @@ def load_blacklist(blocked_sites_path: str, blocked_url_path: str, filter_mode: 
 
     return blocked_sites, blocked_url
 
-# pylint: disable=too-many-locals
+
 def filter_process(
     queue: multiprocessing.Queue,
     result_queue: multiprocessing.Queue,
     filter_mode: str,
     blocked_sites_path: str,
     blocked_url_path: str,
-    refresh_interval=5
+    refresh_interval=5,
 ) -> None:
     """
     Process that listens for requests and checks if the domain/URL should be blocked.
-    
+
     Args:
         queue (multiprocessing.Queue): A queue to receive URL/domain for checking.
         result_queue (multiprocessing.Queue): A queue to send back the result of
@@ -81,10 +86,16 @@ def filter_process(
         refresh_interval (int): Interval in seconds to reload the blacklist files.
     """
     manager = multiprocessing.Manager()
-    blocked_data = manager.dict({
-        "sites": load_blacklist(blocked_sites_path, blocked_url_path, filter_mode)[0],
-        "urls": load_blacklist(blocked_sites_path, blocked_url_path, filter_mode)[1],
-    })
+    blocked_data = manager.dict(
+        {
+            "sites": load_blacklist(blocked_sites_path, blocked_url_path, filter_mode)[
+                0
+            ],
+            "urls": load_blacklist(blocked_sites_path, blocked_url_path, filter_mode)[
+                1
+            ],
+        }
+    )
 
     error_event = threading.Event()
 
@@ -92,9 +103,7 @@ def filter_process(
         try:
             while True:
                 new_blocked_sites, new_blocked_url = load_blacklist(
-                    blocked_sites_path,
-                    blocked_url_path,
-                    filter_mode
+                    blocked_sites_path, blocked_url_path, filter_mode
                 )
 
                 blocked_data["sites"] = new_blocked_sites
@@ -131,7 +140,9 @@ def filter_process(
                 for blocked_host in blocked_data["sites"]
             ):
                 result_queue.put((server_host, "Blocked"))
-            elif any(full_url.startswith(blocked_url) for blocked_url in blocked_data["urls"]):
+            elif any(
+                full_url.startswith(blocked_url) for blocked_url in blocked_data["urls"]
+            ):
                 result_queue.put((full_url, "Blocked"))
             else:
                 result_queue.put((server_host, "Allowed"))

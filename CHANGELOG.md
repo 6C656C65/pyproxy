@@ -1,3 +1,16 @@
+## [0.3.3] - 2025-05-30
+### Added
+- Change pylint to flake8
+- Black scan
+- Build and release python package
+
+## [0.3.2] - 2025-05-13
+### Added
+- Proxy chaining
+- List of authorized IPs
+## Patch
+- Boolean in config ini
+
 ## [0.3.1] - 2025-04-26
 ### Added
 - Add slim image

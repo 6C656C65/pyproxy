@@ -26,6 +26,7 @@ from unittest.mock import patch, mock_open
 import requests
 from pyproxy.modules.filter import load_blacklist, filter_process
 
+
 class TestFilter(unittest.TestCase):
     """
     Test suite for the filter module.
@@ -48,7 +49,7 @@ class TestFilter(unittest.TestCase):
         with patch(
             "builtins.open",
             new_callable=mock_open,
-            read_data="blocked.com\nallowed.com/blocked"
+            read_data="blocked.com\nallowed.com/blocked",
         ):
             blocked_sites, blocked_urls = load_blacklist(
                 "blocked_sites.txt", "blocked_urls.txt", "local"
@@ -64,23 +65,24 @@ class TestFilter(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             load_blacklist("invalid_file.txt", "blocked_urls.txt", "local")
 
-    @patch("requests.get", side_effect=requests.exceptions.RequestException("Failed to load"))
+    @patch(
+        "requests.get",
+        side_effect=requests.exceptions.RequestException("Failed to load"),
+    )
     def test_load_blacklist_http_error(self, _mock_request):
         """Tests that an HTTP error is handled correctly when loading blacklists."""
         with self.assertRaises(requests.exceptions.RequestException):
             load_blacklist(
                 "http://example.com/blocked_sites",
                 "http://example.com/blocked_urls",
-                "http"
+                "http",
             )
 
     @patch("builtins.open", new_callable=mock_open, read_data="")
     def test_load_blacklist_empty_file(self, _mock_file):
         """Tests that an empty file returns empty sets for blocked sites and URLs."""
         blocked_sites, blocked_urls = load_blacklist(
-            "empty_sites.txt",
-            "empty_urls.txt",
-            "local"
+            "empty_sites.txt", "empty_urls.txt", "local"
         )
         self.assertEqual(len(blocked_sites), 0)
         self.assertEqual(len(blocked_urls), 0)
@@ -89,7 +91,7 @@ class TestFilter(unittest.TestCase):
         self,
         input_urls,
         expected_results,
-        patch_data="blocked.com\nallowed.com/blocked"
+        patch_data="blocked.com\nallowed.com/blocked",
     ):
         """Helper method to test filter_process with different inputs."""
         with patch("builtins.open", new_callable=mock_open, read_data=patch_data):
@@ -100,8 +102,8 @@ class TestFilter(unittest.TestCase):
                     self.result_queue,
                     "local",
                     "blocked_sites.txt",
-                    "blocked_urls.txt"
-                )
+                    "blocked_urls.txt",
+                ),
             )
             process.start()
 
@@ -122,13 +124,13 @@ class TestFilter(unittest.TestCase):
             "http://blocked.com/",
             "http://allowed.com/",
             "http://allowed.com/blocked",
-            "http://allowed.com/allowed"
+            "http://allowed.com/allowed",
         ]
         expected_results = [
             ("blocked.com", "Blocked"),
             ("allowed.com", "Allowed"),
             ("allowed.com/blocked", "Blocked"),
-            ("allowed.com", "Allowed")
+            ("allowed.com", "Allowed"),
         ]
         self._test_filter_process_helper(input_urls, expected_results)
 
@@ -137,17 +139,15 @@ class TestFilter(unittest.TestCase):
         input_urls = [
             "http://blocked.com?tracking=123",
             "http://example.com/secret?auth=false",
-            "http://safe.com/page?debug=true"
+            "http://safe.com/page?debug=true",
         ]
         expected_results = [
             ("blocked.com", "Blocked"),
             ("example.com/secret", "Blocked"),
-            ("safe.com", "Allowed")
+            ("safe.com", "Allowed"),
         ]
         self._test_filter_process_helper(
-            input_urls,
-            expected_results,
-            patch_data="blocked.com\nexample.com/secret"
+            input_urls, expected_results, patch_data="blocked.com\nexample.com/secret"
         )
 
     def test_filter_process_subdomain_not_blocked(self):
@@ -156,29 +156,30 @@ class TestFilter(unittest.TestCase):
         """
         input_urls = ["http://sub.blocked.com/"]
         expected_results = [("sub.blocked.com", "Allowed")]
-        self._test_filter_process_helper(input_urls, expected_results, patch_data="blocked.com\n")
+        self._test_filter_process_helper(
+            input_urls, expected_results, patch_data="blocked.com\n"
+        )
 
     def test_filter_process_special_characters(self):
         """Tests if URLs with special characters are correctly handled."""
         input_urls = ["http://weird-site.com/"]
         expected_results = [("weird-site.com", "Blocked")]
         self._test_filter_process_helper(
-            input_urls,
-            expected_results,
-            patch_data="weird-site.com\n"
+            input_urls, expected_results, patch_data="weird-site.com\n"
         )
 
     def test_filter_process_with_path_and_port(self):
         """Tests if URLs with paths and ports are correctly filtered."""
         input_urls = [
             "http://blocked.com:8080/path/to/resource",
-            "http://allowed.com/blocked/resource"
+            "http://allowed.com/blocked/resource",
         ]
         expected_results = [
             ("blocked.com", "Blocked"),
-            ("allowed.com/blocked/resource", "Blocked")
+            ("allowed.com/blocked/resource", "Blocked"),
         ]
         self._test_filter_process_helper(input_urls, expected_results)
+
 
 if __name__ == "__main__":
     unittest.main()

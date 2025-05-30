@@ -16,42 +16,41 @@ import time
 import sys
 import threading
 
+
 def load_cancel_inspect(cancel_inspect_path: str) -> dict:
     """
     Loads cancel inspection entries from a file into a list.
-    
+
     Args:
         cancel_inspect_path (str): The path to the file containing the entries.
-    
+
     Returns:
         list: A list containing each line (entry) from the file.
     """
     cancel_inspect = []
 
-    with open(cancel_inspect_path, 'r', encoding='utf-8') as f:
+    with open(cancel_inspect_path, "r", encoding="utf-8") as f:
         for line in f:
             cancel_inspect.append(line)
 
     return cancel_inspect
 
-# pylint: disable=too-many-locals
+
 def cancel_inspect_process(
     queue: multiprocessing.Queue,
     result_queue: multiprocessing.Queue,
-    cancel_inspect_path: str
+    cancel_inspect_path: str,
 ) -> None:
     """
     Process that monitors the cancel inspection file and checks if received entries exist in it.
-    
+
     Args:
         queue (multiprocessing.Queue): A queue to receive entries to check.
         result_queue (multiprocessing.Queue): A queue to send back True/False depending on match.
         cancel_inspect_path (str): Path to the file containing cancel inspection entries.
     """
     manager = multiprocessing.Manager()
-    cancel_inspect_data = manager.list(
-        load_cancel_inspect(cancel_inspect_path)
-    )
+    cancel_inspect_data = manager.list(load_cancel_inspect(cancel_inspect_path))
 
     error_event = threading.Event()
 

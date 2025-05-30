@@ -29,13 +29,13 @@ jobs:
         run: pip install --no-cache-dir -U pip black flake8 bandit
 
       - name: Lint with flake8
-        run: flake8 pythonrunner
+        run: flake8 pyproxy tests benchmark
 
       - name: Check with black
-        run: black --check pythonrunner
+        run: black --check pyproxy tests benchmark
 
       - name: Check with bandit
-        run: bandit -r pythonrunner
+        run: bandit -r pyproxy tests benchmark
 
   unittest:
     needs: code-scan

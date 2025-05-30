@@ -49,7 +49,7 @@ class TestShortcuts(unittest.TestCase):
         with patch(
             "builtins.open",
             new_callable=mock_open,
-            read_data="alias1=http://example.com\nalias2=http://test.com"
+            read_data="alias1=http://example.com\nalias2=http://test.com",
         ):
             shortcuts = load_shortcuts("shortcuts.txt")
             self.assertEqual(shortcuts["alias1"], "http://example.com")
@@ -63,16 +63,13 @@ class TestShortcuts(unittest.TestCase):
             load_shortcuts("invalid_file.txt")
 
     def _test_shortcuts_process_helper(
-        self,
-        alias,
-        expected_url,
-        patch_data="alias1=http://example.com"
+        self, alias, expected_url, patch_data="alias1=http://example.com"
     ):
         """Helper method to test shortcuts_process with different alias requests."""
         with patch("builtins.open", new_callable=mock_open, read_data=patch_data):
             process = multiprocessing.Process(
                 target=shortcuts_process,
-                args=(self.queue, self.result_queue, "shortcuts.txt")
+                args=(self.queue, self.result_queue, "shortcuts.txt"),
             )
             process.start()
 
@@ -97,11 +94,11 @@ class TestShortcuts(unittest.TestCase):
         with patch(
             "builtins.open",
             new_callable=mock_open,
-            read_data="alias1=http://example.com\nalias2=http://test.com"
+            read_data="alias1=http://example.com\nalias2=http://test.com",
         ):
             process = multiprocessing.Process(
                 target=shortcuts_process,
-                args=(self.queue, self.result_queue, "shortcuts.txt")
+                args=(self.queue, self.result_queue, "shortcuts.txt"),
             )
             process.start()
 
@@ -116,6 +113,7 @@ class TestShortcuts(unittest.TestCase):
 
             process.terminate()
             process.join()
+
 
 if __name__ == "__main__":
     unittest.main()
