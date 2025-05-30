@@ -77,10 +77,9 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Get version
-        id: get_version
         run: |
-          version=$(grep '^__version__' pyproxy/__init__.py | cut -d'"' -f2)
-          echo "version=${version}" >> $GITHUB_ENV
+          VERSION=$(grep '^__version__' pyproxy/__init__.py | cut -d'"' -f2)
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
       - name: Convert repository owner to lowercase
         run: echo "REPO_OWNER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
@@ -103,7 +102,7 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       id-token: write
 
     steps:
