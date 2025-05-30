@@ -1,5 +1,5 @@
 [project]
-name = "pyproxyx"
+name = "pyproxytools"
 description = "Lightweight and fast python web proxy"
 readme = "README.md"
 license = "MIT"
