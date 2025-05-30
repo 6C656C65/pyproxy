@@ -178,3 +178,5 @@ config/*
 certs/*.key
 certs/*.pem
 certs/ca/*.pem
+
+.vscode
