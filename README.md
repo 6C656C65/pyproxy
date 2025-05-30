@@ -42,6 +42,11 @@
 
 ## 📦 **Installation**
 
+### Install from package
+```bash
+pip install pyproxytools
+```
+
 ### Install from source
 ```bash
 git clone https://github.com/6C656C65/pyproxy.git
