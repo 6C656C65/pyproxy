@@ -21,10 +21,9 @@ from pyproxy.modules.cancel_inspect import load_cancel_inspect, cancel_inspect_p
 class TestCancelInspect(unittest.TestCase):
     """Unit tests for the cancel_inspection.py module."""
 
-    # pylint: disable=R1732
     def setUp(self):
         """Set up a temporary file with test data for cancel inspection."""
-        self.temp_file = tempfile.NamedTemporaryFile(mode='w+', delete=False)
+        self.temp_file = tempfile.NamedTemporaryFile(mode="w+", delete=False)
         self.temp_file.write("http://example.com/1\nhttp://example.com/2\n")
         self.temp_file.close()
         self.path = self.temp_file.name
@@ -46,8 +45,7 @@ class TestCancelInspect(unittest.TestCase):
         result_queue = multiprocessing.Queue()
 
         process = multiprocessing.Process(
-            target=cancel_inspect_process,
-            args=(queue, result_queue, self.path)
+            target=cancel_inspect_process, args=(queue, result_queue, self.path)
         )
         process.start()
 
@@ -65,5 +63,5 @@ class TestCancelInspect(unittest.TestCase):
         process.join()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

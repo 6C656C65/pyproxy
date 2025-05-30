@@ -1,0 +1,43 @@
+[project]
+name = "pyproxytools"
+description = "Lightweight and fast python web proxy"
+readme = "README.md"
+license = "MIT"
+license-files = [
+    "LICENSE",
+]
+authors = [{name = "6C656C65"}]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+    "Typing :: Typed",
+]
+dynamic = ["version", "dependencies"]
+
+[project.urls]
+Documentation = "https://github.com/6C656C65/pyproxy/wiki"
+"Issue tracker" = "https://github.com/6C656C65/pyproxy/issues"
+
+[tool.setuptools.packages]
+find = {}
+
+[tool.setuptools.dynamic]
+dependencies = { file = "requirements.txt" }
+
+[project.scripts]
+pyproxy = "pyproxy.pyproxy:main"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

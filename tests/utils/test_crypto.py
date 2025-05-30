@@ -10,6 +10,7 @@ import tempfile
 from OpenSSL import crypto
 from pyproxy.utils.crypto import generate_certificate
 
+
 class TestCrypto(unittest.TestCase):
     """
     Test suite for the crypto module.
@@ -41,7 +42,7 @@ class TestCrypto(unittest.TestCase):
         ca_cert.set_issuer(ca_cert.get_subject())
         ca_cert.set_pubkey(ca_key)
 
-        ca_cert.sign(ca_key, 'sha256')
+        ca_cert.sign(ca_key, "sha256")
 
         with open(self.ca_cert_path, "wb") as cert_file:
             cert_file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, ca_cert))
@@ -53,13 +54,10 @@ class TestCrypto(unittest.TestCase):
         Test the `generate_certificate` function to ensure it generates a certificate
         and private key file for a given domain.
         """
-        if not self.certs_folder.endswith('/'):
-            self.certs_folder += '/'
+        if not self.certs_folder.endswith("/"):
+            self.certs_folder += "/"
         cert_path, key_path = generate_certificate(
-            self.domain,
-            self.certs_folder,
-            self.ca_cert_path,
-            self.ca_key_path
+            self.domain, self.certs_folder, self.ca_cert_path, self.ca_key_path
         )
 
         expected_cert_path = os.path.join(self.certs_folder, f"{self.domain}.pem")
@@ -79,13 +77,15 @@ class TestCrypto(unittest.TestCase):
             key_data = key_file.read()
             key = crypto.load_privatekey(crypto.FILETYPE_PEM, key_data)
 
-        self.assertEqual(crypto.dump_publickey(crypto.FILETYPE_PEM, cert.get_pubkey()),
-                        crypto.dump_publickey(crypto.FILETYPE_PEM, key))
+        self.assertEqual(
+            crypto.dump_publickey(crypto.FILETYPE_PEM, cert.get_pubkey()),
+            crypto.dump_publickey(crypto.FILETYPE_PEM, key),
+        )
 
     def tearDown(self):
         """
         Cleanup method executed after each test.
-        
+
         - Deletes the generated certificate and key files if they exist.
         - Removes the fake CA files.
         """
@@ -105,5 +105,6 @@ class TestCrypto(unittest.TestCase):
         if os.path.exists(self.certs_folder):
             os.rmdir(self.certs_folder)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

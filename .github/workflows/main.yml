@@ -1,0 +1,156 @@
+name: cicd
+
+on: 
+  push:
+    branches:
+      - main
+    tags:
+      - "*"
+  pull_request:
+
+jobs:
+  code-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: pip install --no-cache-dir -U pip black flake8 bandit
+
+      - name: Lint with flake8
+        run: flake8 pyproxy tests benchmark
+
+      - name: Check with black
+        run: black --check pyproxy tests benchmark
+
+      - name: Check with bandit
+        run: bandit -r pyproxy tests benchmark
+
+  unittest:
+    needs: code-scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13
+
+      - name: Install build dependencies
+        run: pip install --no-cache-dir -r requirements.txt
+
+      - name: Run tests
+        run: python -m unittest discover -s tests
+
+  build-docker:
+    needs: unittest
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Get version
+        id: get_version
+        run: |
+          version=$(grep '^__version__' pyproxy/__init__.py | cut -d'"' -f2)
+          echo "version=${version}" >> $GITHUB_ENV
+
+      - name: Convert repository owner to lowercase
+        run: echo "REPO_OWNER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Build Docker image
+        run: docker build -t ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }} -t ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest .
+  
+      - name: Build Docker slim image
+        run: docker build -f Dockerfile.slim -t ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}-slim -t ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest-slim .
+
+      - name: Push Docker image
+        run: |
+          docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}-slim
+          docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest-slim
+          docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:${{ env.VERSION }}
+          docker push ghcr.io/${{ env.REPO_OWNER }}/pyproxy:latest
+
+  build-packages:
+    needs: unittest
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13
+
+      - name: Get version
+        id: get_version
+        run: |
+          version=$(grep '^__version__' pyproxy/__init__.py | cut -d'"' -f2)
+          echo "version=${version}" >> $GITHUB_OUTPUT
+
+      - name: Create Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag v${{ steps.get_version.outputs.version }}
+          git push origin v${{ steps.get_version.outputs.version }}
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          release_name: Release v${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install build dependencies
+        run: pip install --no-cache-dir -U pip . build
+
+      - name: Build package
+        run: python -m build --sdist --wheel
+      - name: Upload built distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Install release dependencies
+        run: pip install --no-cache-dir -U pip . twine packaging
+
+      - name: Upload to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

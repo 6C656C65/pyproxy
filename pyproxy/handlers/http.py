@@ -11,17 +11,33 @@ import threading
 
 from pyproxy.utils.http_req import extract_headers, parse_url
 
-# pylint: disable=R0914
+
 class HttpHandler:
     """
     HttpHandler manages client HTTP connections for a proxy server,
     handling request forwarding, filtering, blocking, and custom header modification
     based on configuration settings.
     """
-    def __init__(self, html_403, logger_config, filter_config,
-                 filter_queue, filter_result_queue, shortcuts_queue, shortcuts_result_queue,
-                 custom_header_queue, custom_header_result_queue, console_logger, shortcuts,
-                 custom_header, active_connections, proxy_enable, proxy_host, proxy_port):
+
+    def __init__(
+        self,
+        html_403,
+        logger_config,
+        filter_config,
+        filter_queue,
+        filter_result_queue,
+        shortcuts_queue,
+        shortcuts_result_queue,
+        custom_header_queue,
+        custom_header_result_queue,
+        console_logger,
+        shortcuts,
+        custom_header,
+        active_connections,
+        proxy_enable,
+        proxy_host,
+        proxy_port,
+    ):
         self.html_403 = html_403
         self.logger_config = logger_config
         self.filter_config = filter_config
@@ -34,25 +50,25 @@ class HttpHandler:
         self.console_logger = console_logger
         self.config_shortcuts = shortcuts
         self.config_custom_header = custom_header
-        self.proxy_enable=proxy_enable
-        self.proxy_host=proxy_host
-        self.proxy_port=proxy_port
+        self.proxy_enable = proxy_enable
+        self.proxy_host = proxy_host
+        self.proxy_port = proxy_port
         self.active_connections = active_connections
 
     def handle_http_request(self, client_socket, request):
         """
         Processes an HTTP request, checks for URL filtering, applies shortcuts,
         and forwards the request to the target server if not blocked.
-        
+
         Args:
             client_socket (socket): The socket object for the client connection.
             request (bytes): The raw HTTP request sent by the client.
         """
-        first_line = request.decode(errors='ignore').split("\n")[0]
+        first_line = request.decode(errors="ignore").split("\n")[0]
         url = first_line.split(" ")[1]
 
         if self.config_custom_header and os.path.isfile(self.config_custom_header):
-            headers = extract_headers(request.decode(errors='ignore'))
+            headers = extract_headers(request.decode(errors="ignore"))
             self.custom_header_queue.put(url)
             new_headers = self.custom_header_result_queue.get(timeout=5)
             headers.update(new_headers)
@@ -80,12 +96,9 @@ class HttpHandler:
             if result[1] == "Blocked":
                 if not self.logger_config.no_logging_block:
                     self.logger_config.block_logger.info(
-                        "%s - %s - %s",
-                        client_socket.getpeername()[0],
-                        url,
-                        first_line
+                        "%s - %s - %s", client_socket.getpeername()[0], url, first_line
                     )
-                with open(self.html_403, "r", encoding='utf-8') as f:
+                with open(self.html_403, "r", encoding="utf-8") as f:
                     custom_403_page = f.read()
                 response = (
                     f"HTTP/1.1 403 Forbidden\r\n"
@@ -103,22 +116,24 @@ class HttpHandler:
                 "%s - %s - %s",
                 client_socket.getpeername()[0],
                 f"http://{server_host}",
-                first_line
+                first_line,
             )
 
         if self.config_custom_header and os.path.isfile(self.config_custom_header):
-            request_lines = request.decode(errors='ignore').split("\r\n")
+            request_lines = request.decode(errors="ignore").split("\r\n")
             request_line = request_lines[0]  # GET / HTTP/1.1
 
             header_lines = [f"{key}: {value}" for key, value in headers.items()]
             reconstructed_headers = "\r\n".join(header_lines)
 
-            if "\r\n\r\n" in request.decode(errors='ignore'):
-                body = request.decode(errors='ignore').split("\r\n\r\n", 1)[1]
+            if "\r\n\r\n" in request.decode(errors="ignore"):
+                body = request.decode(errors="ignore").split("\r\n\r\n", 1)[1]
             else:
                 body = ""
 
-            modified_request = f"{request_line}\r\n{reconstructed_headers}\r\n\r\n{body}".encode()
+            modified_request = (
+                f"{request_line}\r\n{reconstructed_headers}\r\n\r\n{body}".encode()
+            )
 
             self.forward_request_to_server(client_socket, modified_request, url)
 
@@ -128,7 +143,7 @@ class HttpHandler:
     def forward_request_to_server(self, client_socket, request, url):
         """
         Forwards the HTTP request to the target server and sends the response back to the client.
-        
+
         Args:
             client_socket (socket): The socket object for the client connection.
             request (bytes): The raw HTTP request sent by the client.
@@ -156,13 +171,17 @@ class HttpHandler:
                     response = server_socket.recv(4096)
                     if response:
                         client_socket.send(response)
-                        self.active_connections[thread_id]["bytes_received"] += len(response)
+                        self.active_connections[thread_id]["bytes_received"] += len(
+                            response
+                        )
                     else:
                         break
                 except socket.timeout:
                     break
         except (socket.timeout, socket.gaierror, ConnectionRefusedError, OSError) as e:
-            self.console_logger.error("Error connecting to the server %s : %s", server_host, e)
+            self.console_logger.error(
+                "Error connecting to the server %s : %s", server_host, e
+            )
             response = (
                 f"HTTP/1.1 502 Bad Gateway\r\n"
                 f"Content-Length: {len('Bad Gateway')} \r\n"
