@@ -6,6 +6,7 @@ This module contains functions to configure and return loggers for both console 
 
 import logging
 import os
+import colorlog
 
 
 def configure_console_logger() -> logging.Logger:
@@ -17,11 +18,19 @@ def configure_console_logger() -> logging.Logger:
     """
     console_logger = logging.getLogger("ConsoleLogger")
     console_logger.setLevel(logging.INFO)
-    console_formatter = logging.Formatter(
-        "%(asctime)s - %(message)s", datefmt="%d/%m/%Y %H:%M:%S"
+    formatter = colorlog.ColoredFormatter(
+        "%(log_color)s%(asctime)s - %(levelname)s - %(message)s",
+        datefmt="%d/%m/%Y %H:%M:%S",
+        log_colors={
+            "DEBUG": "cyan",
+            "INFO": "green",
+            "WARNING": "yellow",
+            "ERROR": "red",
+            "CRITICAL": "bold_red",
+        },
     )
     console_handler = logging.StreamHandler()
-    console_handler.setFormatter(console_formatter)
+    console_handler.setFormatter(formatter)
     console_logger.addHandler(console_handler)
     return console_logger
 
