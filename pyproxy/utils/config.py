@@ -10,20 +10,32 @@ class ProxyConfigLogger:
     Handles logging configuration for the proxy.
     """
 
-    def __init__(self, access_log, block_log, no_logging_access, no_logging_block):
+    def __init__(
+        self,
+        access_log,
+        block_log,
+        no_logging_access,
+        no_logging_block,
+        console_format,
+        datefmt,
+    ):
         self.access_log = access_log
         self.block_log = block_log
         self.access_logger = None
         self.block_logger = None
         self.no_logging_access = no_logging_access
         self.no_logging_block = no_logging_block
+        self.console_format = console_format
+        self.datefmt = datefmt
 
     def __repr__(self):
         return (
             f"ProxyConfigLogger(access_log={self.access_log}, "
             f"block_log={self.block_log}, "
             f"no_logging_access={self.no_logging_access}, "
-            f"no_logging_block={self.no_logging_block})"
+            f"no_logging_block={self.no_logging_block}), "
+            f"console_format={self.console_format}), "
+            f"datefmt={self.datefmt})"
         )
 
     def to_dict(self):
@@ -35,6 +47,8 @@ class ProxyConfigLogger:
             "block_log": self.block_log,
             "no_logging_access": self.no_logging_access,
             "no_logging_block": self.no_logging_block,
+            "console_format": self.console_format,
+            "datefmt": self.datefmt,
         }
 
 

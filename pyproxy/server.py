@@ -113,7 +113,7 @@ class ProxyServer:
         self.custom_header_result_queue = multiprocessing.Queue()
 
         # Logging
-        self.console_logger = configure_console_logger()
+        self.console_logger = configure_console_logger(self.logger_config)
         if not self.logger_config.no_logging_access:
             self.logger_config.access_logger = configure_file_logger(
                 self.logger_config.access_log, "AccessLogger"

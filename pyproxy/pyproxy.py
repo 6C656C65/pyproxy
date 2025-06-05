@@ -36,6 +36,13 @@ def main():
     proxy_host = get_config_value(args, config, "proxy_host", "Proxy", "127.0.0.1")
     proxy_port = get_config_value(args, config, "proxy_port", "Proxy", 8081)
 
+    console_format = None
+    if config.has_section("Logging") and config.has_option("Logging", "console_format"):
+        console_format = config.get("Logging", "console_format")
+    datefmt = None
+    if config.has_section("Logging") and config.has_option("Logging", "datefmt"):
+        datefmt = config.get("Logging", "datefmt")
+
     logger_config = ProxyConfigLogger(
         access_log=get_config_value(
             args, config, "access_log", "Logging", "logs/access.log"
@@ -49,6 +56,12 @@ def main():
         no_logging_block=str_to_bool(
             get_config_value(args, config, "no_logging_block", "Logging", False)
         ),
+        console_format=(
+            console_format
+            if console_format is not None
+            else "%(asctime)s - %(levelname)s - %(message)s"
+        ),
+        datefmt=datefmt if datefmt is not None else "%d/%m/%Y %H:%M:%S",
     )
 
     filter_config = ProxyConfigFilter(

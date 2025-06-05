@@ -9,18 +9,25 @@ import os
 import colorlog
 
 
-def configure_console_logger() -> logging.Logger:
+def configure_console_logger(logger_config) -> logging.Logger:
     """
     Configures and returns a logger that outputs log messages to the console.
 
     Returns:
         logging.Logger: A logger instance that writes logs to the console.
     """
+    print(logger_config)
     console_logger = logging.getLogger("ConsoleLogger")
     console_logger.setLevel(logging.INFO)
+
+    if "%(log_color)s" not in logger_config.console_format:
+        fmt = "%(log_color)s" + logger_config.console_format
+    else:
+        fmt = logger_config.console_format
+
     formatter = colorlog.ColoredFormatter(
-        "%(log_color)s%(asctime)s - %(levelname)s - %(message)s",
-        datefmt="%d/%m/%Y %H:%M:%S",
+        fmt,
+        datefmt=logger_config.datefmt,
         log_colors={
             "DEBUG": "cyan",
             "INFO": "green",

@@ -124,7 +124,7 @@ def load_config(config_path: str) -> configparser.ConfigParser:
     Returns:
         configparser.ConfigParser: The parsed configuration object.
     """
-    config = configparser.ConfigParser()
+    config = configparser.ConfigParser(interpolation=None)
     config.read(config_path)
     return config
 
