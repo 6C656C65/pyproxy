@@ -12,6 +12,12 @@ from unittest.mock import patch, MagicMock
 from pyproxy.utils.logger import configure_console_logger, configure_file_logger
 
 
+class DummyLoggerConfig:
+    def __init__(self, console_format=None, datefmt=None):
+        self.console_format = console_format or "%(log_color)s%(asctime)s - %(levelname)s - %(message)s"
+        self.datefmt = datefmt or "%d/%m/%Y %H:%M:%S"
+
+
 class TestLogger(unittest.TestCase):
     """
     Test suite for the logger module.
@@ -26,7 +32,8 @@ class TestLogger(unittest.TestCase):
         - Checks that the log level is set to INFO.
         - Verifies that the handler is a StreamHandler.
         """
-        logger = configure_console_logger()
+        logger_config = DummyLoggerConfig()
+        logger = configure_console_logger(logger_config)
 
         self.assertTrue(logger.hasHandlers())
         self.assertEqual(logger.level, logging.INFO)
