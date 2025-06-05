@@ -14,7 +14,9 @@ from pyproxy.utils.logger import configure_console_logger, configure_file_logger
 
 class DummyLoggerConfig:
     def __init__(self, console_format=None, datefmt=None):
-        self.console_format = console_format or "%(log_color)s%(asctime)s - %(levelname)s - %(message)s"
+        self.console_format = (
+            console_format or "%(log_color)s%(asctime)s - %(levelname)s - %(message)s"
+        )
         self.datefmt = datefmt or "%d/%m/%Y %H:%M:%S"
 
 
