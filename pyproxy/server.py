@@ -292,7 +292,21 @@ class ProxyServer:
                         self.console_logger.debug(
                             "Unauthorized IP blocked: %s", client_ip
                         )
-                        client_socket.close()
+                        with open(self.html_403, "r", encoding="utf-8") as f:
+                            custom_403_page = f.read()
+                        response = (
+                            "HTTP/1.1 403 Forbidden\r\n"
+                            "Content-Type: text/html; charset=utf-8\r\n"
+                            "Connection: close\r\n\r\n"
+                            f"{custom_403_page}"
+                        )
+
+                        try:
+                            client_socket.sendall(response.encode("utf-8"))
+                        except Exception as e:
+                            self.console_logger.error("Error sending 403 response: %s", e)
+                        finally:
+                            client_socket.close()
                         continue
 
                 self.console_logger.debug("Connection from %s", addr)
