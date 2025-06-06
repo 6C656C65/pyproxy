@@ -4,121 +4,97 @@ pyproxy.utils.config.py
 This module defines configuration classes used by the HTTP/HTTPS proxy.
 """
 
+from dataclasses import dataclass, asdict
 
+
+@dataclass(frozen=True)
+class ProxyConfigMain:
+    """
+    Handles main configuration for the proxy.
+    """
+
+    host: str
+    port: int
+    debug: bool
+    html_403: str
+    shortcuts: str
+    custom_header: str
+    authorized_ips: str
+
+    def to_dict(self):
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class ProxyConfigProxy:
+    """
+    Handles proxy configuration for the proxy.
+    """
+
+    enable: bool
+    host: str
+    port: int
+
+    def to_dict(self):
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class ProxyConfigMonitoring:
+    """
+    Handles monitoring configuration for the proxy.
+    """
+
+    flask_port: int
+    flask_pass: str
+
+    def to_dict(self):
+        return asdict(self)
+
+
+@dataclass()
 class ProxyConfigLogger:
     """
     Handles logging configuration for the proxy.
     """
 
-    def __init__(
-        self,
-        access_log,
-        block_log,
-        no_logging_access,
-        no_logging_block,
-        console_format,
-        datefmt,
-    ):
-        self.access_log = access_log
-        self.block_log = block_log
-        self.access_logger = None
-        self.block_logger = None
-        self.no_logging_access = no_logging_access
-        self.no_logging_block = no_logging_block
-        self.console_format = console_format
-        self.datefmt = datefmt
-
-    def __repr__(self):
-        return (
-            f"ProxyConfigLogger(access_log={self.access_log}, "
-            f"block_log={self.block_log}, "
-            f"no_logging_access={self.no_logging_access}, "
-            f"no_logging_block={self.no_logging_block}), "
-            f"console_format={self.console_format}), "
-            f"datefmt={self.datefmt})"
-        )
+    access_log: str
+    block_log: str
+    no_logging_access: bool
+    no_logging_block: bool
+    console_format: str
+    datefmt: str
 
     def to_dict(self):
-        """
-        Converts the ProxyConfigLogger instance into a dictionary.
-        """
-        return {
-            "access_log": self.access_log,
-            "block_log": self.block_log,
-            "no_logging_access": self.no_logging_access,
-            "no_logging_block": self.no_logging_block,
-            "console_format": self.console_format,
-            "datefmt": self.datefmt,
-        }
+        return asdict(self)
 
 
+@dataclass(frozen=True)
 class ProxyConfigFilter:
     """
     Manages filtering configuration for the proxy.
     """
 
-    def __init__(self, no_filter, filter_mode, blocked_sites, blocked_url):
-        self.no_filter = no_filter
-        self.filter_mode = filter_mode
-        self.blocked_sites = blocked_sites
-        self.blocked_url = blocked_url
-
-    def __repr__(self):
-        return (
-            f"ProxyConfigFilter(no_filter={self.no_filter}, "
-            f"filter_mode='{self.filter_mode}', "
-            f"blocked_sites={self.blocked_sites}, "
-            f"blocked_url={self.blocked_url})"
-        )
+    no_filter: bool
+    filter_mode: str
+    blocked_sites: str
+    blocked_url: str
 
     def to_dict(self):
-        """
-        Converts the ProxyConfigFilter instance into a dictionary.
-        """
-        return {
-            "no_filter": self.no_filter,
-            "filter_mode": self.filter_mode,
-            "blocked_sites": self.blocked_sites,
-            "blocked_url": self.blocked_url,
-        }
+        return asdict(self)
 
 
+@dataclass(frozen=True)
 class ProxyConfigSSL:
     """
     Handles SSL/TLS inspection configuration.
     """
 
-    def __init__(
-        self,
-        ssl_inspect,
-        inspect_ca_cert,
-        inspect_ca_key,
-        inspect_certs_folder,
-        cancel_inspect,
-    ):
-        self.ssl_inspect = ssl_inspect
-        self.inspect_ca_cert = inspect_ca_cert
-        self.inspect_ca_key = inspect_ca_key
-        self.inspect_certs_folder = inspect_certs_folder
-        self.cancel_inspect = cancel_inspect
-
-    def __repr__(self):
-        return (
-            f"ProxyConfigSSL(ssl_inspect={self.ssl_inspect}, "
-            f"inspect_ca_cert='{self.inspect_ca_cert}', "
-            f"inspect_ca_key='{self.inspect_ca_key}', "
-            f"inspect_certs_folder='{self.inspect_certs_folder}', "
-            f"cancel_inspect={self.cancel_inspect})"
-        )
+    ssl_inspect: bool
+    inspect_ca_cert: str
+    inspect_ca_key: str
+    inspect_certs_folder: str
+    cancel_inspect: str
 
     def to_dict(self):
-        """
-        Converts the ProxyConfigSSL instance into a dictionary.
-        """
-        return {
-            "ssl_inspect": self.ssl_inspect,
-            "inspect_ca_cert": self.inspect_ca_cert,
-            "inspect_ca_key": self.inspect_ca_key,
-            "inspect_certs_folder": self.inspect_certs_folder,
-            "cancel_inspect": self.cancel_inspect,
-        }
+        return asdict(self)

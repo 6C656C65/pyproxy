@@ -39,9 +39,7 @@ class ProxyHandlers:
         shortcuts,
         custom_header,
         active_connections,
-        proxy_enable,
-        proxy_host,
-        proxy_port,
+        proxy_config,
     ):
         self.html_403 = html_403
         self.logger_config = logger_config
@@ -58,9 +56,7 @@ class ProxyHandlers:
         self.console_logger = console_logger
         self.config_shortcuts = shortcuts
         self.config_custom_header = custom_header
-        self.proxy_enable = proxy_enable
-        self.proxy_host = proxy_host
-        self.proxy_port = proxy_port
+        self.proxy_config = proxy_config
         self.active_connections = active_connections
 
     def handle_client(self, client_socket):
@@ -98,9 +94,7 @@ class ProxyHandlers:
                 console_logger=self.console_logger,
                 shortcuts=self.config_shortcuts,
                 custom_header=self.config_custom_header,
-                proxy_enable=self.proxy_enable,
-                proxy_host=self.proxy_host,
-                proxy_port=self.proxy_port,
+                proxy_config=self.proxy_config,
                 active_connections=self.active_connections,
             )
             client_https_handler.handle_https_connection(client_socket, first_line)
@@ -118,9 +112,7 @@ class ProxyHandlers:
                 console_logger=self.console_logger,
                 shortcuts=self.config_shortcuts,
                 custom_header=self.config_custom_header,
-                proxy_enable=self.proxy_enable,
-                proxy_host=self.proxy_host,
-                proxy_port=self.proxy_port,
+                proxy_config=self.proxy_config,
                 active_connections=self.active_connections,
             )
             client_http_handler.handle_http_request(client_socket, request)

@@ -42,9 +42,7 @@ class HttpsHandler:
         shortcuts,
         custom_header,
         active_connections,
-        proxy_enable,
-        proxy_host,
-        proxy_port,
+        proxy_config,
     ):
         self.html_403 = html_403
         self.logger_config = logger_config
@@ -61,9 +59,7 @@ class HttpsHandler:
         self.console_logger = console_logger
         self.config_shortcuts = shortcuts
         self.config_custom_header = custom_header
-        self.proxy_enable = proxy_enable
-        self.proxy_host = proxy_host
-        self.proxy_port = proxy_port
+        self.proxy_config = proxy_config
         self.active_connections = active_connections
 
     def handle_https_connection(self, client_socket, first_line):
@@ -133,9 +129,9 @@ class HttpsHandler:
                 )
                 ssl_client_socket.do_handshake()
 
-                if self.proxy_enable:
+                if self.proxy_config.enable:
                     next_proxy_socket = socket.create_connection(
-                        (self.proxy_host, self.proxy_port)
+                        (self.proxy_config.host, self.proxy_config.port)
                     )
                     connect_command = (
                         f"CONNECT {server_host}:{server_port} HTTP/1.1\r\n"
@@ -158,7 +154,7 @@ class HttpsHandler:
                     server_socket = socket.create_connection((server_host, server_port))
 
                 server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-                if self.proxy_enable:
+                if self.proxy_config.enable:
                     server_context.check_hostname = False
                     server_context.verify_mode = ssl.CERT_NONE
                 else:

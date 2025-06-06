@@ -8,8 +8,9 @@ HTTP client connections. It handles request forwarding, blocking, and custom hea
 import socket
 import os
 import threading
+from urllib.parse import urlparse
 
-from pyproxy.utils.http_req import extract_headers, parse_url
+from pyproxy.utils.http_req import extract_headers
 
 
 class HttpHandler:
@@ -34,9 +35,7 @@ class HttpHandler:
         shortcuts,
         custom_header,
         active_connections,
-        proxy_enable,
-        proxy_host,
-        proxy_port,
+        proxy_config,
     ):
         self.html_403 = html_403
         self.logger_config = logger_config
@@ -50,9 +49,7 @@ class HttpHandler:
         self.console_logger = console_logger
         self.config_shortcuts = shortcuts
         self.config_custom_header = custom_header
-        self.proxy_enable = proxy_enable
-        self.proxy_host = proxy_host
-        self.proxy_port = proxy_port
+        self.proxy_config = proxy_config
         self.active_connections = active_connections
 
     def handle_http_request(self, client_socket, request):
@@ -74,7 +71,8 @@ class HttpHandler:
             headers.update(new_headers)
 
         if self.config_shortcuts and os.path.isfile(self.config_shortcuts):
-            domain, _ = parse_url(url)
+            parsed_url = urlparse(url)
+            domain = parsed_url.hostname
             self.shortcuts_queue.put(domain)
             shortcut_url = self.shortcuts_result_queue.get(timeout=5)
             if shortcut_url:
@@ -110,7 +108,8 @@ class HttpHandler:
                 client_socket.close()
                 self.active_connections.pop(threading.get_ident(), None)
                 return
-        server_host, _ = parse_url(url)
+        parsed_url = urlparse(url)
+        server_host = parsed_url.hostname
         if not self.logger_config.no_logging_access:
             self.logger_config.access_logger.info(
                 "%s - %s - %s",
@@ -149,10 +148,14 @@ class HttpHandler:
             request (bytes): The raw HTTP request sent by the client.
             url (str): The target URL from the HTTP request.
         """
-        if self.proxy_enable:
-            server_host, server_port = self.proxy_host, self.proxy_port
+        if self.proxy_config.enable:
+            server_host, server_port = self.proxy_config.host, self.proxy_config.port
         else:
-            server_host, server_port = parse_url(url)
+            parsed_url = urlparse(url)
+            server_host = parsed_url.hostname
+            server_port = parsed_url.port or (
+                443 if parsed_url.scheme == "https" else 80
+            )
         thread_id = threading.get_ident()
 
         if thread_id in self.active_connections:

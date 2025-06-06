@@ -57,28 +57,19 @@ class ProxyServer:
 
     def __init__(
         self,
-        host,
-        port,
-        debug,
+        main_config,
         logger_config,
         filter_config,
-        html_403,
         ssl_config,
-        shortcuts,
-        custom_header,
-        flask_port,
-        flask_pass,
-        proxy_enable,
-        proxy_host,
-        proxy_port,
-        authorized_ips,
+        monitoring_config,
+        proxy_config,
     ):
         """
         Initialize the ProxyServer with configuration parameters.
         """
-        self.host_port = (host, port)
-        self.debug = debug
-        self.html_403 = html_403
+        self.host_port = (main_config.host, main_config.port)
+        self.debug = main_config.debug
+        self.html_403 = main_config.html_403
         self.active_connections = {}
 
         self.logger_config = logger_config
@@ -86,16 +77,13 @@ class ProxyServer:
         self.ssl_config = ssl_config
 
         # Monitoring
-        self.flask_port = flask_port
-        self.flask_pass = flask_pass
+        self.monitoring_config = monitoring_config
 
         # Proxy
-        self.proxy_enable = proxy_enable
-        self.proxy_host = proxy_host
-        self.proxy_port = proxy_port
+        self.proxy_config = proxy_config
 
         # Authorized IPS
-        self.authorized_ips = authorized_ips
+        self.authorized_ips = main_config.authorized_ips
         self.allowed_subnets = None
 
         # Process communication queues
@@ -124,8 +112,8 @@ class ProxyServer:
             )
 
         # Configuration files
-        self.config_shortcuts = shortcuts
-        self.config_custom_header = custom_header
+        self.config_shortcuts = main_config.shortcuts
+        self.config_custom_header = main_config.custom_header
 
     def _initialize_processes(self):
         """
@@ -270,7 +258,12 @@ class ProxyServer:
         if not __slim__:
             flask_thread = threading.Thread(
                 target=start_flask_server,
-                args=(self, self.flask_port, self.flask_pass, self.debug),
+                args=(
+                    self,
+                    self.monitoring_config.flask_port,
+                    self.monitoring_config.flask_pass,
+                    self.debug,
+                ),
                 daemon=True,
             )
             flask_thread.start()
@@ -304,7 +297,9 @@ class ProxyServer:
                         try:
                             client_socket.sendall(response.encode("utf-8"))
                         except Exception as e:
-                            self.console_logger.error("Error sending 403 response: %s", e)
+                            self.console_logger.error(
+                                "Error sending 403 response: %s", e
+                            )
                         finally:
                             client_socket.close()
                         continue
@@ -326,9 +321,7 @@ class ProxyServer:
                     console_logger=self.console_logger,
                     shortcuts=self.config_shortcuts,
                     custom_header=self.config_custom_header,
-                    proxy_enable=self.proxy_enable,
-                    proxy_host=self.proxy_host,
-                    proxy_port=self.proxy_port,
+                    proxy_config=self.proxy_config,
                     active_connections=self.active_connections,
                 )
                 client_handler = threading.Thread(
