@@ -12,6 +12,7 @@ import threading
 import logging
 import multiprocessing
 import os
+import ssl
 import time
 import ipaddress
 
@@ -214,6 +215,46 @@ class ProxyServer:
                 )
                 self.allowed_subnets = None
 
+    def _validate_ssl_inspection_files(self):
+        """
+        Validate SSL Inspection cert/key.
+        """
+        required_files = [
+            self.ssl_config.inspect_ca_cert,
+            self.ssl_config.inspect_ca_key,
+        ]
+
+        for file_path in required_files:
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"SSL file not found: {file_path}")
+            if not os.path.isfile(file_path):
+                raise ValueError(f"Invalid SSL file: {file_path} is not a file")
+
+        try:
+            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            ssl_context.load_cert_chain(
+                certfile=self.ssl_config.inspect_ca_cert,
+                keyfile=self.ssl_config.inspect_ca_key,
+            )
+        except ssl.SSLError as e:
+            raise ssl.SSLError(f"SSL certificate/key validation failed: {e}")
+
+    def _start_monitoring_server(self):
+        """
+        Start monitoring flask server.
+        """
+        flask_thread = threading.Thread(
+            target=start_flask_server,
+            args=(
+                self,
+                self.monitoring_config.flask_port,
+                self.monitoring_config.flask_pass,
+                self.debug,
+            ),
+            daemon=True,
+        )
+        flask_thread.start()
+
     def start(self):
         """
         Start the proxy server and listen for incoming client connections.
@@ -228,19 +269,8 @@ class ProxyServer:
                     self.console_logger.debug("[*] %s = %s", key, getattr(self, key))
 
         if self.ssl_config.ssl_inspect:
-            if not self.ssl_config.inspect_ca_cert or not os.path.isfile(
-                self.ssl_config.inspect_ca_cert
-            ):
-                raise FileNotFoundError(
-                    f"CA certificate not found: {self.ssl_config.inspect_ca_cert}"
-                )
-            if not self.ssl_config.inspect_ca_key or not os.path.isfile(
-                self.ssl_config.inspect_ca_key
-            ):
-                raise FileNotFoundError(
-                    f"CA key not found: {self.ssl_config.inspect_ca_key}"
-                )
             os.makedirs(self.ssl_config.inspect_certs_folder, exist_ok=True)
+            self._validate_ssl_inspection_files()
             self._clean_inspection_folder()
 
         if self.filter_config.filter_mode == "local":
@@ -256,17 +286,7 @@ class ProxyServer:
         self._load_authorized_ips()
 
         if not __slim__:
-            flask_thread = threading.Thread(
-                target=start_flask_server,
-                args=(
-                    self,
-                    self.monitoring_config.flask_port,
-                    self.monitoring_config.flask_pass,
-                    self.debug,
-                ),
-                daemon=True,
-            )
-            flask_thread.start()
+            self._start_monitoring_server()
             self.console_logger.debug("[*] Starting the monitoring process...")
 
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -328,7 +348,6 @@ class ProxyServer:
                     target=client.handle_client, args=(client_socket,), daemon=True
                 )
                 client_handler.start()
-                client_ip, client_port = addr
                 self.active_connections[client_handler.ident] = {
                     "client_ip": client_ip,
                     "client_port": client_port,
