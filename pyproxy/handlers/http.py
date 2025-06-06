@@ -151,11 +151,10 @@ class HttpHandler:
                 self.active_connections.pop(threading.get_ident(), None)
                 return
 
-        if not self.filter_config.no_filter:
-            blocked = self._is_blocked(url)
-            if blocked:
-                self._send_403(client_socket, url, first_line)
-                return
+        if self._is_blocked(url):
+            self._send_403(client_socket, url, first_line)
+            return
+
         parsed_url = urlparse(url)
         server_host = parsed_url.hostname
         if not self.logger_config.no_logging_access:
