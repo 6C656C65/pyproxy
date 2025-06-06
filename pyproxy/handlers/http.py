@@ -52,6 +52,78 @@ class HttpHandler:
         self.proxy_config = proxy_config
         self.active_connections = active_connections
 
+    def _get_modified_headers(self, url, request_text):
+        """
+        Extract headers from a request
+        """
+        headers = extract_headers(request_text)
+        self.custom_header_queue.put(url)
+        try:
+            new_headers = self.custom_header_result_queue.get(timeout=5)
+            headers.update(new_headers)
+        except Exception:
+            self.console_logger.warning(
+                "Timeout while getting custom headers for %s", url
+            )
+        return headers
+
+    def _rebuild_http_request(self, request_line, headers, body=""):
+        """
+        Reconstructs an HTTP request with the new headers.
+        """
+        header_lines = [f"{key}: {value}" for key, value in headers.items()]
+        reconstructed_headers = "\r\n".join(header_lines)
+        return f"{request_line}\r\n{reconstructed_headers}\r\n\r\n{body}".encode()
+
+    def _apply_shortcut(self, url: str) -> str | None:
+        """
+        Checks if a shortcut is defined for the given domain.
+        """
+        if self.config_shortcuts and os.path.isfile(self.config_shortcuts):
+            parsed_url = urlparse(url)
+            domain = parsed_url.hostname
+            self.shortcuts_queue.put(domain)
+            try:
+                return self.shortcuts_result_queue.get(timeout=5)
+            except Exception:
+                self.console_logger.warning(
+                    "Timeout while getting shortcut for %s", url
+                )
+        return None
+
+    def _is_blocked(self, url: str) -> bool:
+        """
+        Checks if a URL is blocked by the configuration filter.
+        """
+        if not self.filter_config.no_filter:
+            self.filter_queue.put(url)
+            try:
+                result = self.filter_result_queue.get(timeout=5)
+                return result[1] == "Blocked"
+            except Exception:
+                self.console_logger.warning("Timeout while filtering %s", url)
+        return False
+
+    def _send_403(self, client_socket, url, first_line):
+        """
+        Sends an HTTP 403 Forbidden response to the client.
+        """
+        if not self.logger_config.no_logging_block:
+            self.logger_config.block_logger.info(
+                "%s - %s - %s", client_socket.getpeername()[0], url, first_line
+            )
+        with open(self.html_403, "r", encoding="utf-8") as f:
+            custom_403_page = f.read()
+        response = (
+            f"HTTP/1.1 403 Forbidden\r\n"
+            f"Content-Length: {len(custom_403_page)}\r\n"
+            f"\r\n"
+            f"{custom_403_page}"
+        )
+        client_socket.sendall(response.encode())
+        client_socket.close()
+        self.active_connections.pop(threading.get_ident(), None)
+
     def handle_http_request(self, client_socket, request):
         """
         Processes an HTTP request, checks for URL filtering, applies shortcuts,
@@ -64,17 +136,8 @@ class HttpHandler:
         first_line = request.decode(errors="ignore").split("\n")[0]
         url = first_line.split(" ")[1]
 
-        if self.config_custom_header and os.path.isfile(self.config_custom_header):
-            headers = extract_headers(request.decode(errors="ignore"))
-            self.custom_header_queue.put(url)
-            new_headers = self.custom_header_result_queue.get(timeout=5)
-            headers.update(new_headers)
-
         if self.config_shortcuts and os.path.isfile(self.config_shortcuts):
-            parsed_url = urlparse(url)
-            domain = parsed_url.hostname
-            self.shortcuts_queue.put(domain)
-            shortcut_url = self.shortcuts_result_queue.get(timeout=5)
+            shortcut_url = self._apply_shortcut(url)
             if shortcut_url:
                 response = (
                     f"HTTP/1.1 302 Found\r\n"
@@ -89,24 +152,9 @@ class HttpHandler:
                 return
 
         if not self.filter_config.no_filter:
-            self.filter_queue.put(url)
-            result = self.filter_result_queue.get(timeout=5)
-            if result[1] == "Blocked":
-                if not self.logger_config.no_logging_block:
-                    self.logger_config.block_logger.info(
-                        "%s - %s - %s", client_socket.getpeername()[0], url, first_line
-                    )
-                with open(self.html_403, "r", encoding="utf-8") as f:
-                    custom_403_page = f.read()
-                response = (
-                    f"HTTP/1.1 403 Forbidden\r\n"
-                    f"Content-Length: {len(custom_403_page)}\r\n"
-                    f"\r\n"
-                    f"{custom_403_page}"
-                )
-                client_socket.sendall(response.encode())
-                client_socket.close()
-                self.active_connections.pop(threading.get_ident(), None)
+            blocked = self._is_blocked(url)
+            if blocked:
+                self._send_403(client_socket, url, first_line)
                 return
         parsed_url = urlparse(url)
         server_host = parsed_url.hostname
@@ -119,20 +167,16 @@ class HttpHandler:
             )
 
         if self.config_custom_header and os.path.isfile(self.config_custom_header):
-            request_lines = request.decode(errors="ignore").split("\r\n")
-            request_line = request_lines[0]  # GET / HTTP/1.1
-
-            header_lines = [f"{key}: {value}" for key, value in headers.items()]
-            reconstructed_headers = "\r\n".join(header_lines)
-
-            if "\r\n\r\n" in request.decode(errors="ignore"):
-                body = request.decode(errors="ignore").split("\r\n\r\n", 1)[1]
-            else:
-                body = ""
-
-            modified_request = (
-                f"{request_line}\r\n{reconstructed_headers}\r\n\r\n{body}".encode()
+            request_text = request.decode(errors="ignore")
+            request_lines = request_text.split("\r\n")
+            headers = self._get_modified_headers(url, request_text)
+            request_line = request_lines[0]
+            body = (
+                request_text.split("\r\n\r\n", 1)[1]
+                if "\r\n\r\n" in request_text
+                else ""
             )
+            modified_request = self._rebuild_http_request(request_line, headers, body)
 
             self.forward_request_to_server(client_socket, modified_request, url)
 
