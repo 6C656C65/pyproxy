@@ -1,3 +1,9 @@
+## [0.4.1] - 2025-06-05
+### Added
+- Custom log format in config.ini
+- Add __main__.py to run module
+- Colored log
+
 ## [0.3.3] - 2025-05-30
 ### Added
 - Change pylint to flake8

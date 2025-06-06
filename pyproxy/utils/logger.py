@@ -16,7 +16,6 @@ def configure_console_logger(logger_config) -> logging.Logger:
     Returns:
         logging.Logger: A logger instance that writes logs to the console.
     """
-    print(logger_config)
     console_logger = logging.getLogger("ConsoleLogger")
     console_logger.setLevel(logging.INFO)
 

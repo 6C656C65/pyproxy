@@ -6,7 +6,14 @@ to those URLs. The proxy can handle both HTTP and HTTPS requests, and logs acces
 
 from .server import ProxyServer
 from .utils.args import parse_args, load_config, get_config_value, str_to_bool
-from .utils.config import ProxyConfigLogger, ProxyConfigFilter, ProxyConfigSSL
+from .utils.config import (
+    ProxyConfigLogger,
+    ProxyConfigFilter,
+    ProxyConfigSSL,
+    ProxyConfigMonitoring,
+    ProxyConfigProxy,
+    ProxyConfigMain,
+)
 
 
 def main():
@@ -17,31 +24,39 @@ def main():
     args = parse_args()
     config = load_config(args.config_file)
 
-    host = get_config_value(args, config, "host", "Server", "0.0.0.0")  # nosec
-    port = int(get_config_value(args, config, "port", "Server", 8080))  # nosec
-    debug = get_config_value(args, config, "debug", "Logging", False)
-    html_403 = get_config_value(args, config, "html_403", "Files", "assets/403.html")
-    shortcuts = get_config_value(
-        args, config, "shortcuts", "Options", "config/shortcuts.txt"
+    main_config = ProxyConfigMain(
+        host=get_config_value(args, config, "host", "Server", "0.0.0.0"),  # nosec
+        port=int(get_config_value(args, config, "port", "Server", 8080)),  # nosec
+        debug=str_to_bool(get_config_value(args, config, "debug", "Logging", False)),
+        html_403=get_config_value(args, config, "html_403", "Files", "assets/403.html"),
+        shortcuts=get_config_value(
+            args, config, "shortcuts", "Options", "config/shortcuts.txt"
+        ),
+        custom_header=get_config_value(
+            args, config, "custom_header", "Options", "config/custom_header.json"
+        ),
+        authorized_ips=get_config_value(
+            args, config, "authorized_ips", "Options", "config/authorized_ips.txt"
+        ),
     )
-    custom_header = get_config_value(
-        args, config, "custom_header", "Options", "config/custom_header.json"
-    )
-    authorized_ips = get_config_value(
-        args, config, "authorized_ips", "Options", "config/authorized_ips.txt"
-    )
-    flask_port = get_config_value(args, config, "flask_port", "Monitoring", 5000)
-    flask_pass = get_config_value(args, config, "flask_pass", "Monitoring", "password")
-    proxy_enable = get_config_value(args, config, "proxy_enable", "Proxy", False)
-    proxy_host = get_config_value(args, config, "proxy_host", "Proxy", "127.0.0.1")
-    proxy_port = get_config_value(args, config, "proxy_port", "Proxy", 8081)
 
-    console_format = None
-    if config.has_section("Logging") and config.has_option("Logging", "console_format"):
-        console_format = config.get("Logging", "console_format")
-    datefmt = None
-    if config.has_section("Logging") and config.has_option("Logging", "datefmt"):
-        datefmt = config.get("Logging", "datefmt")
+    monitoring_config = ProxyConfigMonitoring(
+        flask_port=get_config_value(args, config, "flask_port", "Monitoring", 5000),
+        flask_pass=get_config_value(
+            args, config, "flask_pass", "Monitoring", "password"
+        ),
+    )
+
+    proxy_config = ProxyConfigProxy(
+        enable=str_to_bool(
+            get_config_value(args, config, "proxy_enable", "Proxy", False)
+        ),
+        host=get_config_value(args, config, "proxy_host", "Proxy", "127.0.0.1"),
+        port=get_config_value(args, config, "proxy_port", "Proxy", 8081),
+    )
+
+    console_format = config.get("Logging", "console_format", fallback=None)
+    datefmt = config.get("Logging", "datefmt", fallback=None)
 
     logger_config = ProxyConfigLogger(
         access_log=get_config_value(
@@ -96,25 +111,12 @@ def main():
     )
 
     proxy = ProxyServer(
-        host=host,
-        port=port,
-        debug=str_to_bool(debug),
+        main_config=main_config,
         logger_config=logger_config,
         filter_config=filter_config,
         ssl_config=ssl_config,
-        flask_port=flask_port,
-        flask_pass=flask_pass,
-        html_403=html_403,
-        shortcuts=shortcuts,
-        custom_header=custom_header,
-        authorized_ips=authorized_ips,
-        proxy_enable=str_to_bool(proxy_enable),
-        proxy_host=proxy_host,
-        proxy_port=proxy_port,
+        monitoring_config=monitoring_config,
+        proxy_config=proxy_config,
     )
 
     proxy.start()
-
-
-if __name__ == "__main__":
-    main()

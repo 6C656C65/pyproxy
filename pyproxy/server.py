@@ -12,6 +12,7 @@ import threading
 import logging
 import multiprocessing
 import os
+import ssl
 import time
 import ipaddress
 
@@ -57,28 +58,19 @@ class ProxyServer:
 
     def __init__(
         self,
-        host,
-        port,
-        debug,
+        main_config,
         logger_config,
         filter_config,
-        html_403,
         ssl_config,
-        shortcuts,
-        custom_header,
-        flask_port,
-        flask_pass,
-        proxy_enable,
-        proxy_host,
-        proxy_port,
-        authorized_ips,
+        monitoring_config,
+        proxy_config,
     ):
         """
         Initialize the ProxyServer with configuration parameters.
         """
-        self.host_port = (host, port)
-        self.debug = debug
-        self.html_403 = html_403
+        self.host_port = (main_config.host, main_config.port)
+        self.debug = main_config.debug
+        self.html_403 = main_config.html_403
         self.active_connections = {}
 
         self.logger_config = logger_config
@@ -86,16 +78,13 @@ class ProxyServer:
         self.ssl_config = ssl_config
 
         # Monitoring
-        self.flask_port = flask_port
-        self.flask_pass = flask_pass
+        self.monitoring_config = monitoring_config
 
         # Proxy
-        self.proxy_enable = proxy_enable
-        self.proxy_host = proxy_host
-        self.proxy_port = proxy_port
+        self.proxy_config = proxy_config
 
         # Authorized IPS
-        self.authorized_ips = authorized_ips
+        self.authorized_ips = main_config.authorized_ips
         self.allowed_subnets = None
 
         # Process communication queues
@@ -124,8 +113,8 @@ class ProxyServer:
             )
 
         # Configuration files
-        self.config_shortcuts = shortcuts
-        self.config_custom_header = custom_header
+        self.config_shortcuts = main_config.shortcuts
+        self.config_custom_header = main_config.custom_header
 
     def _initialize_processes(self):
         """
@@ -226,6 +215,46 @@ class ProxyServer:
                 )
                 self.allowed_subnets = None
 
+    def _validate_ssl_inspection_files(self):
+        """
+        Validate SSL Inspection cert/key.
+        """
+        required_files = [
+            self.ssl_config.inspect_ca_cert,
+            self.ssl_config.inspect_ca_key,
+        ]
+
+        for file_path in required_files:
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"SSL file not found: {file_path}")
+            if not os.path.isfile(file_path):
+                raise ValueError(f"Invalid SSL file: {file_path} is not a file")
+
+        try:
+            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            ssl_context.load_cert_chain(
+                certfile=self.ssl_config.inspect_ca_cert,
+                keyfile=self.ssl_config.inspect_ca_key,
+            )
+        except ssl.SSLError as e:
+            raise ssl.SSLError(f"SSL certificate/key validation failed: {e}")
+
+    def _start_monitoring_server(self):
+        """
+        Start monitoring flask server.
+        """
+        flask_thread = threading.Thread(
+            target=start_flask_server,
+            args=(
+                self,
+                self.monitoring_config.flask_port,
+                self.monitoring_config.flask_pass,
+                self.debug,
+            ),
+            daemon=True,
+        )
+        flask_thread.start()
+
     def start(self):
         """
         Start the proxy server and listen for incoming client connections.
@@ -240,19 +269,8 @@ class ProxyServer:
                     self.console_logger.debug("[*] %s = %s", key, getattr(self, key))
 
         if self.ssl_config.ssl_inspect:
-            if not self.ssl_config.inspect_ca_cert or not os.path.isfile(
-                self.ssl_config.inspect_ca_cert
-            ):
-                raise FileNotFoundError(
-                    f"CA certificate not found: {self.ssl_config.inspect_ca_cert}"
-                )
-            if not self.ssl_config.inspect_ca_key or not os.path.isfile(
-                self.ssl_config.inspect_ca_key
-            ):
-                raise FileNotFoundError(
-                    f"CA key not found: {self.ssl_config.inspect_ca_key}"
-                )
             os.makedirs(self.ssl_config.inspect_certs_folder, exist_ok=True)
+            self._validate_ssl_inspection_files()
             self._clean_inspection_folder()
 
         if self.filter_config.filter_mode == "local":
@@ -268,12 +286,7 @@ class ProxyServer:
         self._load_authorized_ips()
 
         if not __slim__:
-            flask_thread = threading.Thread(
-                target=start_flask_server,
-                args=(self, self.flask_port, self.flask_pass, self.debug),
-                daemon=True,
-            )
-            flask_thread.start()
+            self._start_monitoring_server()
             self.console_logger.debug("[*] Starting the monitoring process...")
 
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -292,7 +305,23 @@ class ProxyServer:
                         self.console_logger.debug(
                             "Unauthorized IP blocked: %s", client_ip
                         )
-                        client_socket.close()
+                        with open(self.html_403, "r", encoding="utf-8") as f:
+                            custom_403_page = f.read()
+                        response = (
+                            "HTTP/1.1 403 Forbidden\r\n"
+                            "Content-Type: text/html; charset=utf-8\r\n"
+                            "Connection: close\r\n\r\n"
+                            f"{custom_403_page}"
+                        )
+
+                        try:
+                            client_socket.sendall(response.encode("utf-8"))
+                        except Exception as e:
+                            self.console_logger.error(
+                                "Error sending 403 response: %s", e
+                            )
+                        finally:
+                            client_socket.close()
                         continue
 
                 self.console_logger.debug("Connection from %s", addr)
@@ -312,16 +341,13 @@ class ProxyServer:
                     console_logger=self.console_logger,
                     shortcuts=self.config_shortcuts,
                     custom_header=self.config_custom_header,
-                    proxy_enable=self.proxy_enable,
-                    proxy_host=self.proxy_host,
-                    proxy_port=self.proxy_port,
+                    proxy_config=self.proxy_config,
                     active_connections=self.active_connections,
                 )
                 client_handler = threading.Thread(
                     target=client.handle_client, args=(client_socket,), daemon=True
                 )
                 client_handler.start()
-                client_ip, client_port = addr
                 self.active_connections[client_handler.ident] = {
                     "client_ip": client_ip,
                     "client_port": client_port,
