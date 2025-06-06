@@ -171,6 +171,37 @@ class HttpsHandler:
         )
         return ssl_server_socket
 
+    def _process_first_ssl_request(self, ssl_client_socket, server_host):
+        """
+        Reads and processes the first SSL client request, extracts the method and full URL.
+        """
+        try:
+            first_request = ssl_client_socket.recv(4096).decode(errors="ignore")
+            if not first_request:
+                raise ConnectionError("Empty request received")
+
+            request_line = first_request.split("\r\n")[0]
+            method, path, _ = request_line.split(" ")
+
+            full_url = f"https://{server_host}{path}"
+
+            if self._is_blocked(f"{server_host}{path}"):
+                return None, full_url, True
+
+            if not self.logger_config.no_logging_access:
+                self.logger_config.access_logger.info(
+                    "%s - %s - %s %s",
+                    ssl_client_socket.getpeername()[0],
+                    f"https://{server_host}",
+                    method,
+                    full_url,
+                )
+
+            return first_request, full_url, False
+        except Exception as e:
+            self.logger_config.error_logger.error(f"SSL request processing error : {e}")
+            return None, None, False
+
     def handle_https_connection(self, client_socket, first_line):
         """
         Handles HTTPS connections by establishing a connection with the target server
@@ -212,35 +243,17 @@ class HttpsHandler:
                     server_socket, server_host
                 )
 
-                try:
-                    first_request = ssl_client_socket.recv(4096).decode(errors="ignore")
-                    request_line = first_request.split("\r\n")[0]
-                    method, path, _ = request_line.split(" ")
+                first_request, full_url, is_blocked = self._process_first_ssl_request(
+                    ssl_client_socket, server_host
+                )
+                if is_blocked:
+                    self._send_403(ssl_client_socket, target, first_line)
+                    return
+                if first_request is None:
+                    ssl_client_socket.close()
+                    return
 
-                    full_url = f"https://{server_host}{path}"
-
-                    if self._is_blocked(f"{server_host}{path}"):
-                        self._send_403(ssl_client_socket, target, first_line)
-                        return
-
-                    if not self.logger_config.no_logging_access:
-                        self.logger_config.access_logger.info(
-                            "%s - %s - %s %s",
-                            ssl_client_socket.getpeername()[0],
-                            f"https://{server_host}",
-                            method,
-                            full_url,
-                        )
-
-                    ssl_server_socket.sendall(first_request.encode())
-
-                except ValueError:
-                    self.console_logger.error(
-                        "Error parsing request: malformed request line."
-                    )
-
-                except (socket.error, ssl.SSLError) as e:
-                    self.console_logger.error("Network or SSL error : %s", str(e))
+                ssl_server_socket.sendall(first_request.encode())
 
                 self.transfer_data_between_sockets(ssl_client_socket, ssl_server_socket)
 
