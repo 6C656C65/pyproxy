@@ -362,5 +362,6 @@ class ProxyServer:
                     "bytes_received": 0,
                     "thread_name": client_handler.name,
                 }
+                print("debug server.py :", client_handler.ident)
         except KeyboardInterrupt:
             self.console_logger.info("Proxy interrupted, shutting down.")

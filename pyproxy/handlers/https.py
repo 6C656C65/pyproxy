@@ -231,10 +231,10 @@ class HttpsHandler:
         not_inspect = self._should_skip_inspection(server_host)
 
         thread_id = threading.get_ident()
-        self.active_connections[thread_id] = {
+        self.active_connections[thread_id].update({
             "bytes_sent": 0,
             "bytes_received": 0,
-        }
+        })
 
         if self.ssl_config.ssl_inspect and not not_inspect:
             try:

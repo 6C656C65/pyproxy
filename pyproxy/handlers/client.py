@@ -91,29 +91,25 @@ class ProxyHandlers:
             client_socket (socket): The socket object for the client connection.
         """
         try:
+            client_socket.settimeout(10)
             request = client_socket.recv(4096)
-        except ConnectionResetError:
-            self.console_logger.debug("Connection reset by peer during recv, closing socket.")
+
+            if not request:
+                return
+
+            first_line = request.decode(errors="ignore").split("\n")[0]
+            print("debug server.py :", threading.get_ident())
+            if first_line.startswith("CONNECT"):
+                https_handler = self._create_handler(
+                    HttpsHandler,
+                    ssl_config=self.ssl_config,
+                    cancel_inspect_queue=self.cancel_inspect_queue,
+                    cancel_inspect_result_queue=self.cancel_inspect_result_queue,
+                )
+                https_handler.handle_https_connection(client_socket, first_line)
+            else:
+                http_handler = self._create_handler(HttpHandler)
+                http_handler.handle_http_request(client_socket, request)
+        finally:
             client_socket.close()
             self.active_connections.pop(threading.get_ident(), None)
-            return
-
-        if not request:
-            self.console_logger.debug("No request received, closing connection.")
-            client_socket.close()
-            self.active_connections.pop(threading.get_ident(), None)
-            return
-
-        first_line = request.decode(errors="ignore").split("\n")[0]
-
-        if first_line.startswith("CONNECT"):
-            https_handler = self._create_handler(
-                HttpsHandler,
-                ssl_config=self.ssl_config,
-                cancel_inspect_queue=self.cancel_inspect_queue,
-                cancel_inspect_result_queue=self.cancel_inspect_result_queue,
-            )
-            https_handler.handle_https_connection(client_socket, first_line)
-        else:
-            http_handler = self._create_handler(HttpHandler)
-            http_handler.handle_http_request(client_socket, request)

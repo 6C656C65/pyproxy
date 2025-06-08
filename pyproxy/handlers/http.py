@@ -205,12 +205,12 @@ class HttpHandler:
         thread_id = threading.get_ident()
 
         if thread_id in self.active_connections:
-            self.active_connections[thread_id] = {
+            self.active_connections[thread_id].update({
                 "target_ip": server_host,
                 "target_port": server_port,
                 "bytes_sent": 0,
                 "bytes_received": 0,
-            }
+            })
 
         try:
             server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
