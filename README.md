@@ -97,12 +97,12 @@ Contributions are welcome and appreciated! If you'd like to improve this project
 
 ## 📦 Deployment with Ansible
 
-If you want to deploy **pyproxy** automatically to remote servers (via source or Docker), an official [Ansible role](https://github.com/6C656C65/pyproxy_ansible) is available:
+If you want to deploy **pyproxy** automatically to remote servers (via source or Docker), an official [Ansible role](https://github.com/pyproxytools/pyproxy-ansible) is available:
 
 * 🔧 Install from source or run as a Docker container
 * 📁 Supports customization of ports, versions, and paths
 * 🚀 Easily integrable into your infrastructure or CI/CD pipelines
 
-👉 Check out the [ansible-role-pyproxy](https://github.com/6C656C65/pyproxy_ansible) repository for more details and usage instructions.
+👉 Check out the [pyproxy-ansible](https://github.com/pyproxytools/pyproxy-ansible) repository for more details and usage instructions.
 
 ---
