@@ -1,3 +1,10 @@
+## [0.4.3] - 2025-06-08
+### Added
+- Docs: installation from compose
+- Custom access & blocked log
+### Change
+- Default console format
+
 ## [0.4.2] - 2025-06-06
 ### Added
 - Custom 403 page for unauthorized IPs
