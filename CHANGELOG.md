@@ -1,3 +1,9 @@
+## [0.4.2] - 2025-06-06
+### Added
+- Custom 403 page for unauthorized IPs
+### Change
+- Rework code format (server.py, handlers/)
+
 ## [0.4.1] - 2025-06-05
 ### Added
 - Custom log format in config.ini
