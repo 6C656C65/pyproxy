@@ -206,6 +206,21 @@ class HttpsHandler:
             if self._is_blocked(f"{server_host}{path}"):
                 return None, full_url, True
 
+            if not self.logger_config.no_logging_access:
+                method, domain_port, protocol = first_line.split(" ")
+                domain, port = domain_port.split(":")
+                self.logger_config.access_logger.info(
+                    "",
+                    extra={
+                        "ip_src": ssl_client_socket.getpeername()[0],
+                        "url": full_url,
+                        "method": method,
+                        "domain": server_host,
+                        "port": port,
+                        "protocol": protocol,
+                    },
+                )
+
             return first_request, full_url, False
         except Exception as e:
             self.logger_config.error_logger.error(f"SSL request processing error : {e}")
@@ -318,13 +333,13 @@ class HttpsHandler:
                 )
 
                 if not self.logger_config.no_logging_access:
-                    _, _, protocol = first_line.split(" ")
+                    method, _, protocol = first_line.split(" ")
                     self.logger_config.access_logger.info(
                         "",
                         extra={
                             "ip_src": client_ip,
                             "url": target,
-                            "method": "CONNECT",
+                            "method": method,
                             "domain": server_host,
                             "port": server_port,
                             "protocol": protocol,
@@ -398,6 +413,7 @@ class HttpsHandler:
                             data
                         )
         except (socket.error, OSError):
+            self.logger_config.console_logger("error")
             client_socket.close()
             server_socket.close()
             self.active_connections.pop(threading.get_ident(), None)
