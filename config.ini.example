@@ -8,7 +8,7 @@ access_log = ./logs/access.log
 block_log = ./logs/block.log
 no_logging_access = false
 no_logging_block = false
-console_format = %(asctime)s - %(levelname)s - %(message)s
+console_format = %(asctime)s - %(levelname)s - %(filename)s (%(funcName)s) - %(message)s
 datefmt = %d/%m/%Y %H:%M:%S
 
 [Files]

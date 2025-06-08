@@ -74,7 +74,7 @@ def main():
         console_format=(
             console_format
             if console_format is not None
-            else "%(asctime)s - %(levelname)s - %(message)s"
+            else "%(asctime)s - %(levelname)s - %(filename)s (%(funcName)s) - %(message)s"
         ),
         datefmt=datefmt if datefmt is not None else "%d/%m/%Y %H:%M:%S",
     )
