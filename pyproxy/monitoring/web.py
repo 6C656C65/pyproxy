@@ -272,7 +272,7 @@ def start_flask_server(proxy_server, flask_port, flask_pass, debug) -> None:
             "ssl_config": (
                 proxy_server.ssl_config.to_dict() if proxy_server.ssl_config else None
             ),
-            "flask_port": proxy_server.flask_port,
+            "flask_port": proxy_server.monitoring_config.flask_port,
         }
         return jsonify(config_data)
 
