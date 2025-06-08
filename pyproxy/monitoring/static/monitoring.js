@@ -77,7 +77,55 @@ function formatBytes(bytes) {
     return value.toFixed(2) + ' ' + sizes[i];
 }
 
-// Initial fetches and intervals
+const tabs = document.querySelectorAll('.tab');
+const contents = document.querySelectorAll('.tab-content');
+
+function activateTab(tab) {
+    tabs.forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+        t.setAttribute('tabindex', '-1');
+    });
+    contents.forEach(c => c.classList.remove('active'));
+
+    tab.classList.add('active');
+    tab.setAttribute('aria-selected', 'true');
+    tab.setAttribute('tabindex', '0');
+    const contentId = tab.getAttribute('aria-controls');
+    document.getElementById(contentId).classList.add('active');
+
+    localStorage.setItem('activeTabId', tab.id);
+}
+
+tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        activateTab(tab);
+    });
+
+    tab.addEventListener('keydown', e => {
+        let index = Array.from(tabs).indexOf(e.target);
+        if (e.key === 'ArrowRight') {
+            index = (index + 1) % tabs.length;
+            tabs[index].focus();
+        } else if (e.key === 'ArrowLeft') {
+            index = (index - 1 + tabs.length) % tabs.length;
+            tabs[index].focus();
+        }
+    });
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+    const savedTabId = localStorage.getItem('activeTabId');
+    if (savedTabId) {
+        const savedTab = document.getElementById(savedTabId);
+        if (savedTab) {
+            activateTab(savedTab);
+            return;
+        }
+    }
+    activateTab(tabs[0]);
+});
+
 fetchMonitoringData();
 fetchConfigData();
 setInterval(fetchMonitoringData, 5000);

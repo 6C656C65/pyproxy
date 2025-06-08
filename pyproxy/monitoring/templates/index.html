@@ -1,29 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Proxy Monitoring</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
+    <meta charset="UTF-8" />
+    <title>PyProxy Monitoring</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png" />
 </head>
 <body>
     <div class="container">
         <h1>
-            <img src="{{ url_for('static', filename='favicon.png') }}" alt="icon" class="favicon">
+            <img src="{{ url_for('static', filename='favicon.png') }}" alt="icon" class="favicon" />
             PyProxy Monitoring
         </h1>
 
-        <div class="grid">
-            <div class="left-column">
-                <div id="status-section" class="section">Loading...</div>
-                <div id="subprocesses-section" class="section"></div>
-            </div>
-            <div class="right-column">
-                <div id="connections-section" class="section"></div>
-                <div id="config-section" class="section">Loading config...</div>
-            </div>
+        <!-- Tabs -->
+        <div class="tabs" role="tablist" aria-label="Monitoring Sections">
+            <div class="tab active" role="tab" aria-selected="true" tabindex="0" id="tab-status" aria-controls="content-status">Status</div>
+            <div class="tab" role="tab" aria-selected="false" tabindex="-1" id="tab-settings" aria-controls="content-settings">Settings</div>
+            <div class="tab" role="tab" aria-selected="false" tabindex="-1" id="tab-connections" aria-controls="content-connections">Connections</div>
+        </div>
+
+        <!-- Tab Contents -->
+        <div id="content-status" class="tab-content active" role="tabpanel" aria-labelledby="tab-status">
+            <div id="status-section" class="section">Loading...</div>
+            <div id="subprocesses-section" class="section"></div>
+        </div>
+
+        <div id="content-settings" class="tab-content" role="tabpanel" aria-labelledby="tab-settings">
+            <div id="config-section" class="section">Loading config...</div>
+        </div>
+
+        <div id="content-connections" class="tab-content" role="tabpanel" aria-labelledby="tab-connections">
+            <div id="connections-section" class="section"></div>
         </div>
     </div>
+
     <script src="{{ url_for('static', filename='monitoring.js') }}"></script>
 </body>
 </html>
