@@ -90,7 +90,13 @@ class ProxyHandlers:
         Args:
             client_socket (socket): The socket object for the client connection.
         """
-        request = client_socket.recv(4096)
+        try:
+            request = client_socket.recv(4096)
+        except ConnectionResetError:
+            self.console_logger.debug("Connection reset by peer during recv, closing socket.")
+            client_socket.close()
+            self.active_connections.pop(threading.get_ident(), None)
+            return
 
         if not request:
             self.console_logger.debug("No request received, closing connection.")
