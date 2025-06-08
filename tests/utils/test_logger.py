@@ -14,10 +14,15 @@ from pyproxy.utils.logger import configure_console_logger, configure_file_logger
 
 class DummyLoggerConfig:
     def __init__(self, console_format=None, datefmt=None):
-        self.console_format = (
-            console_format or "%(log_color)s%(asctime)s - %(levelname)s - %(filename)s (%(funcName)s) - %(message)s"
+        self.console_format = console_format or (
+            "%(log_color)s"
+            "date=%(asctime)s "
+            "level=%(levelname)s "
+            "file=%(filename)s "
+            "function=%(funcName)s "
+            "message=%(message)s"
         )
-        self.datefmt = datefmt or "%d/%m/%Y %H:%M:%S"
+        self.datefmt = datefmt or "%Y-%m-%d %H:%M:%S"
 
 
 class TestLogger(unittest.TestCase):
@@ -56,11 +61,15 @@ class TestLogger(unittest.TestCase):
         mock_file_handler.return_value = mock_handler_instance
 
         log_path = "logs/test.log"
-        logger = configure_file_logger(log_path, "TestLogger")
+        log_name = "TestLogger"
+        log_format = "%(asctime)s - %(levelname)s - %(message)s"
+        datefmt = "%Y-%m-%d %H:%M:%S"
+        logger = configure_file_logger(log_path, log_name, log_format, datefmt)
 
-        self.assertTrue(logger.hasHandlers())
-        self.assertEqual(logger.level, logging.INFO)
+        self.assertTrue(logger.hasHandlers(), "Logger should have handlers.")
+        self.assertEqual(logger.level, logging.INFO, "Logger level should be INFO.")
         mock_file_handler.assert_called_once_with(log_path)
+        mock_handler_instance.setFormatter.assert_called_once()
 
     def tearDown(self):
         """
