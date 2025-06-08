@@ -60,6 +60,12 @@ docker run -d ghcr.io/6c656c65/pyproxy:latest
 ```
 You can use slim images by adding `-slim` to the end of the tags
 
+### Install with Compose
+```bash
+wget https://raw.githubusercontent.com/6C656C65/pyproxy/main/docker-compose.yml
+docker-compose up -d
+```
+
 ## 🚀 **Usage**
 
 ### Start the proxy
