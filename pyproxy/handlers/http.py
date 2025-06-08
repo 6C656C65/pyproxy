@@ -109,8 +109,18 @@ class HttpHandler:
         Sends an HTTP 403 Forbidden response to the client.
         """
         if not self.logger_config.no_logging_block:
+            method, domain_port, protocol = first_line.split(" ")
+            domain, port = domain_port.split(":")
             self.logger_config.block_logger.info(
-                "%s - %s - %s", client_socket.getpeername()[0], url, first_line
+                "",
+                extra={
+                    "ip_src": client_socket.getpeername()[0],
+                    "url": url,
+                    "method": method,
+                    "domain": domain,
+                    "port": port,
+                    "protocol": protocol,
+                },
             )
         with open(self.html_403, "r", encoding="utf-8") as f:
             custom_403_page = f.read()
@@ -155,16 +165,6 @@ class HttpHandler:
             self._send_403(client_socket, url, first_line)
             return
 
-        parsed_url = urlparse(url)
-        server_host = parsed_url.hostname
-        if not self.logger_config.no_logging_access:
-            self.logger_config.access_logger.info(
-                "%s - %s - %s",
-                client_socket.getpeername()[0],
-                f"http://{server_host}",
-                first_line,
-            )
-
         if self.config_custom_header and os.path.isfile(self.config_custom_header):
             request_text = request.decode(errors="ignore")
             request_lines = request_text.split("\r\n")
@@ -177,12 +177,14 @@ class HttpHandler:
             )
             modified_request = self._rebuild_http_request(request_line, headers, body)
 
-            self.forward_request_to_server(client_socket, modified_request, url)
+            self.forward_request_to_server(
+                client_socket, modified_request, url, first_line
+            )
 
         else:
-            self.forward_request_to_server(client_socket, request, url)
+            self.forward_request_to_server(client_socket, request, url, first_line)
 
-    def forward_request_to_server(self, client_socket, request, url):
+    def forward_request_to_server(self, client_socket, request, url, first_line):
         """
         Forwards the HTTP request to the target server and sends the response back to the client.
 
@@ -190,6 +192,7 @@ class HttpHandler:
             client_socket (socket): The socket object for the client connection.
             request (bytes): The raw HTTP request sent by the client.
             url (str): The target URL from the HTTP request.
+            first_line (str): The first line of the HTTP request (e.g., "GET / HTTP/1.1").
         """
         if self.proxy_config.enable:
             server_host, server_port = self.proxy_config.host, self.proxy_config.port
@@ -202,8 +205,12 @@ class HttpHandler:
         thread_id = threading.get_ident()
 
         if thread_id in self.active_connections:
-            self.active_connections[thread_id]["target_ip"] = server_host
-            self.active_connections[thread_id]["target_port"] = server_port
+            self.active_connections[thread_id] = {
+                "target_ip": server_host,
+                "target_port": server_port,
+                "bytes_sent": 0,
+                "bytes_received": 0,
+            }
 
         try:
             server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -238,6 +245,23 @@ class HttpHandler:
             client_socket.close()
             self.active_connections.pop(thread_id, None)
         finally:
+            if not self.logger_config.no_logging_access:
+                method, url, protocol = first_line.split(" ")
+
+                conn_data = self.active_connections.get(thread_id, {})
+                self.logger_config.access_logger.info(
+                    "",
+                    extra={
+                        "ip_src": client_socket.getpeername()[0],
+                        "url": f"http://{server_host}",
+                        "method": method,
+                        "domain": parsed_url.hostname,
+                        "port": parsed_url.port,
+                        "protocol": protocol,
+                        "bytes_sent": conn_data.get("bytes_sent", 0),
+                        "bytes_received": conn_data.get("bytes_received", 0),
+                    },
+                )
             client_socket.close()
             server_socket.close()
             self.active_connections.pop(thread_id, None)

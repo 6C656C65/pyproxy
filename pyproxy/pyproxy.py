@@ -56,6 +56,8 @@ def main():
     )
 
     console_format = config.get("Logging", "console_format", fallback=None)
+    access_log_format = config.get("Logging", "access_log_format", fallback=None)
+    block_log_format = config.get("Logging", "block_log_format", fallback=None)
     datefmt = config.get("Logging", "datefmt", fallback=None)
 
     logger_config = ProxyConfigLogger(
@@ -74,9 +76,44 @@ def main():
         console_format=(
             console_format
             if console_format is not None
-            else "%(asctime)s - %(levelname)s - %(message)s"
+            else (
+                "date=%(asctime)s "
+                "level=%(levelname)s "
+                "file=%(filename)s "
+                "function=%(funcName)s "
+                "message=%(message)s"
+            )
         ),
-        datefmt=datefmt if datefmt is not None else "%d/%m/%Y %H:%M:%S",
+        access_log_format=(
+            access_log_format
+            if access_log_format is not None
+            else (
+                "date=%(asctime)s "
+                "ip_src=%(ip_src)s "
+                "url=%(url)s "
+                "method=%(method)s "
+                "domain=%(domain)s "
+                "port=%(port)s "
+                "protocol=%(protocol)s "
+                "bytes_sent=%(bytes_sent)s "
+                "bytes_received=%(bytes_received)s "
+                "tls_version=%(tls_version)s"
+            )
+        ),
+        block_log_format=(
+            block_log_format
+            if block_log_format is not None
+            else (
+                "date=%(asctime)s "
+                "ip_src=%(ip_src)s "
+                "url=%(url)s "
+                "method=%(method)s "
+                "domain=%(domain)s "
+                "port=%(port)s "
+                "protocol=%(protocol)s"
+            )
+        ),
+        datefmt=datefmt if datefmt is not None else "%Y-%m-%d %H:%M:%S",
     )
 
     filter_config = ProxyConfigFilter(

@@ -80,8 +80,18 @@ class HttpsHandler:
         Sends an HTTP 403 Forbidden response to the client.
         """
         if not self.logger_config.no_logging_block:
+            method, domain_port, protocol = first_line.split(" ")
+            domain, port = domain_port.split(":")
             self.logger_config.block_logger.info(
-                "%s - %s - %s", client_socket.getpeername()[0], url, first_line
+                "",
+                extra={
+                    "ip_src": client_socket.getpeername()[0],
+                    "url": url,
+                    "method": method,
+                    "domain": domain,
+                    "port": port,
+                    "protocol": protocol,
+                },
             )
         with open(self.html_403, "r", encoding="utf-8") as f:
             custom_403_page = f.read()
@@ -150,7 +160,15 @@ class HttpsHandler:
         ssl_client_socket = client_context.wrap_socket(
             client_socket, server_side=True, do_handshake_on_connect=False
         )
-        ssl_client_socket.do_handshake()
+        try:
+            ssl_client_socket.do_handshake()
+        except ssl.SSLError as e:
+            if "TLSV1_ALERT_UNKNOWN_CA" in str(e):
+                self.console_logger.debug("Client refused cert: %s", e)
+                ssl_client_socket.close()
+                raise ConnectionAbortedError("Client refused SSL cert")
+            else:
+                raise
         return ssl_client_socket
 
     def _wrap_server_socket_with_ssl(self, server_socket, server_host):
@@ -171,7 +189,7 @@ class HttpsHandler:
         )
         return ssl_server_socket
 
-    def _process_first_ssl_request(self, ssl_client_socket, server_host):
+    def _process_first_ssl_request(self, ssl_client_socket, server_host, first_line):
         """
         Reads and processes the first SSL client request, extracts the method and full URL.
         """
@@ -187,15 +205,6 @@ class HttpsHandler:
 
             if self._is_blocked(f"{server_host}{path}"):
                 return None, full_url, True
-
-            if not self.logger_config.no_logging_access:
-                self.logger_config.access_logger.info(
-                    "%s - %s - %s %s",
-                    ssl_client_socket.getpeername()[0],
-                    f"https://{server_host}",
-                    method,
-                    full_url,
-                )
 
             return first_request, full_url, False
         except Exception as e:
@@ -221,6 +230,12 @@ class HttpsHandler:
 
         not_inspect = self._should_skip_inspection(server_host)
 
+        thread_id = threading.get_ident()
+        self.active_connections[thread_id] = {
+            "bytes_sent": 0,
+            "bytes_received": 0,
+        }
+
         if self.ssl_config.ssl_inspect and not not_inspect:
             try:
                 cert_path, key_path = generate_certificate(
@@ -236,6 +251,8 @@ class HttpsHandler:
                     client_socket, cert_path, key_path
                 )
 
+                tls_version = ssl_client_socket.version() or "unknown"
+
                 server_socket = self._establish_server_connection(
                     server_host, server_port
                 )
@@ -244,7 +261,7 @@ class HttpsHandler:
                 )
 
                 first_request, full_url, is_blocked = self._process_first_ssl_request(
-                    ssl_client_socket, server_host
+                    ssl_client_socket, server_host, first_line
                 )
                 if is_blocked:
                     self._send_403(ssl_client_socket, target, first_line)
@@ -254,9 +271,31 @@ class HttpsHandler:
                     return
 
                 ssl_server_socket.sendall(first_request.encode())
+                client_ip = ssl_client_socket.getpeername()[0]
+                bytes_sent, bytes_received = self.transfer_data_between_sockets(
+                    ssl_client_socket, ssl_server_socket
+                )
 
-                self.transfer_data_between_sockets(ssl_client_socket, ssl_server_socket)
+                if not self.logger_config.no_logging_access:
+                    method, _, protocol = first_line.split(" ")
+                    self.logger_config.access_logger.info(
+                        "",
+                        extra={
+                            "ip_src": client_ip,
+                            "url": target,
+                            "method": method,
+                            "domain": server_host,
+                            "port": server_port,
+                            "protocol": protocol,
+                            "bytes_sent": bytes_sent,
+                            "bytes_received": bytes_received,
+                            "tls_version": tls_version,
+                        },
+                    )
 
+            except ConnectionAbortedError:
+                self.active_connections.pop(threading.get_ident(), None)
+                return
             except ssl.SSLError as e:
                 self.console_logger.error("SSL error: %s", str(e))
             except socket.error as e:
@@ -267,17 +306,31 @@ class HttpsHandler:
 
         else:
             try:
-                server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                server_socket.connect((server_host, server_port))
+                server_socket = self._establish_server_connection(
+                    server_host, server_port
+                )
                 client_socket.sendall(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+
+                client_ip = client_socket.getpeername()[0]
+                bytes_sent, bytes_received = self.transfer_data_between_sockets(
+                    client_socket, server_socket
+                )
+
                 if not self.logger_config.no_logging_access:
+                    _, _, protocol = first_line.split(" ")
                     self.logger_config.access_logger.info(
-                        "%s - %s - %s",
-                        client_socket.getpeername()[0],
-                        f"https://{server_host}",
-                        first_line,
+                        "",
+                        extra={
+                            "ip_src": client_ip,
+                            "url": target,
+                            "method": "CONNECT",
+                            "domain": server_host,
+                            "port": server_port,
+                            "protocol": protocol,
+                            "bytes_sent": bytes_sent,
+                            "bytes_received": bytes_received,
+                        },
                     )
-                self.transfer_data_between_sockets(client_socket, server_socket)
             except (
                 socket.timeout,
                 socket.gaierror,
@@ -295,6 +348,8 @@ class HttpsHandler:
                 )
                 client_socket.sendall(response.encode())
                 client_socket.close()
+            finally:
+                self.active_connections.pop(thread_id, None)
 
     def transfer_data_between_sockets(self, client_socket, server_socket):
         """
@@ -327,8 +382,12 @@ class HttpsHandler:
                         self.console_logger.debug("Closing connection.")
                         client_socket.close()
                         server_socket.close()
+                        bytes_sent = self.active_connections[thread_id]["bytes_sent"]
+                        bytes_received = self.active_connections[thread_id][
+                            "bytes_received"
+                        ]
                         self.active_connections.pop(threading.get_ident(), None)
-                        return
+                        return bytes_sent, bytes_received
                     if sock is client_socket:
                         server_socket.sendall(data)
                         self.active_connections[thread_id]["bytes_sent"] += len(data)

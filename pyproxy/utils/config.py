@@ -63,6 +63,8 @@ class ProxyConfigLogger:
     no_logging_access: bool
     no_logging_block: bool
     console_format: str
+    access_log_format: str
+    block_log_format: str
     datefmt: str
 
     def to_dict(self):
