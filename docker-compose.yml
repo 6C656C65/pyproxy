@@ -1,6 +1,6 @@
 services:
   pyproxy:
-    image: ghcr.io/6c656c65/pyproxy:latest
+    image: ghcr.io/pyproxytools/pyproxy:latest
     #build: .
     restart: unless-stopped
     ports:

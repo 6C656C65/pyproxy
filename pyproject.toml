@@ -6,7 +6,7 @@ license = "MIT"
 license-files = [
     "LICENSE",
 ]
-authors = [{name = "6C656C65"}]
+authors = [{name = "pyproxytools"}]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
@@ -26,8 +26,8 @@ classifiers = [
 dynamic = ["version", "dependencies"]
 
 [project.urls]
-Documentation = "https://github.com/6C656C65/pyproxy/wiki"
-"Issue tracker" = "https://github.com/6C656C65/pyproxy/issues"
+Documentation = "https://github.com/pyproxytools/pyproxy/wiki"
+"Issue tracker" = "https://github.com/pyproxytools/pyproxy/issues"
 
 [tool.setuptools.packages]
 find = {}

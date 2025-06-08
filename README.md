@@ -6,14 +6,14 @@
 **pyproxy** is a lightweight, fast, and customizable Python-based web proxy server designed to handle both HTTP and HTTPS traffic efficiently. It can be used for various purposes, including web scraping, traffic monitoring, and content filtering.
 
 <p align="center">
-  <img src="https://img.shields.io/github/license/6C656C65/pyproxy?style=for-the-badge">
-  <img src="https://img.shields.io/github/issues/6C656C65/pyproxy?style=for-the-badge">
-  <img src="https://img.shields.io/github/issues-closed/6C656C65/pyproxy?style=for-the-badge">
+  <img src="https://img.shields.io/github/license/pyproxytools/pyproxy?style=for-the-badge">
+  <img src="https://img.shields.io/github/issues/pyproxytools/pyproxy?style=for-the-badge">
+  <img src="https://img.shields.io/github/issues-closed/pyproxytools/pyproxy?style=for-the-badge">
   <br>
-  <img src="https://img.shields.io/github/forks/6C656C65/pyproxy?style=for-the-badge">
-  <img src="https://img.shields.io/github/stars/6C656C65/pyproxy?style=for-the-badge">
-  <img src="https://img.shields.io/github/commit-activity/w/6C656C65/pyproxy?style=for-the-badge">
-  <img src="https://img.shields.io/github/contributors/6C656C65/pyproxy?style=for-the-badge">
+  <img src="https://img.shields.io/github/forks/pyproxytools/pyproxy?style=for-the-badge">
+  <img src="https://img.shields.io/github/stars/pyproxytools/pyproxy?style=for-the-badge">
+  <img src="https://img.shields.io/github/commit-activity/w/pyproxytools/pyproxy?style=for-the-badge">
+  <img src="https://img.shields.io/github/contributors/pyproxytools/pyproxy?style=for-the-badge">
   <br>
   <img src="https://img.shields.io/pypi/v/pyproxytools?style=for-the-badge">
   <img src="https://img.shields.io/pypi/pyversions/pyproxytools?style=for-the-badge">
@@ -48,21 +48,21 @@ pip install pyproxytools
 
 ### Install from source
 ```bash
-git clone https://github.com/6C656C65/pyproxy.git
+git clone https://github.com/pyproxytools/pyproxy.git
 cd pyproxy
 pip install -r requirements.txt
 ```
 
 ### Install with Docker
 ```bash
-docker pull ghcr.io/6c656c65/pyproxy:latest
-docker run -d ghcr.io/6c656c65/pyproxy:latest
+docker pull ghcr.io/pyproxytools/pyproxy:latest
+docker run -d ghcr.io/pyproxytools/pyproxy:latest
 ```
 You can use slim images by adding `-slim` to the end of the tags
 
 ### Install with Compose
 ```bash
-wget https://raw.githubusercontent.com/6C656C65/pyproxy/main/docker-compose.yml
+wget https://raw.githubusercontent.com/pyproxytools/pyproxy/main/docker-compose.yml
 docker-compose up -d
 ```
 
@@ -76,7 +76,7 @@ The proxy will be available at: `0.0.0.0:8080`.
 The access log will be available at `./logs/access.log`.
 
 ## 📚 **Documentation**
-If you encounter any problems, or if you want to use the program in a particular way, I advise you to read the [documentation](https://github.com/6C656C65/pyproxy/wiki).
+If you encounter any problems, or if you want to use the program in a particular way, I advise you to read the [documentation](https://github.com/pyproxytools/pyproxy/wiki).
 
 ## 🔧 **To do**
 
