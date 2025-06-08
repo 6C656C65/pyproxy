@@ -232,6 +232,7 @@ class HttpsHandler:
 
         thread_id = threading.get_ident()
         self.active_connections[thread_id].update({
+            "target_domain": server_host,
             "bytes_sent": 0,
             "bytes_received": 0,
         })

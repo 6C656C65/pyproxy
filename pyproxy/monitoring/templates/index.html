@@ -58,7 +58,7 @@
                         : data.active_connections.map(conn => `
                             <div class="connection">
                                 <p><strong>Client:</strong> ${conn.client_ip}:${conn.client_port}</p>
-                                <p><strong>Target:</strong> ${conn.target_ip}:${conn.target_port}</p>
+                                <p><strong>Target:</strong> ${conn.target_domain} (${conn.target_ip}:${conn.target_port})</p>
                                 <p><strong>Sent:</strong> ${conn.bytes_sent} bytes</p>
                                 <p><strong>Received:</strong> ${formatBytes(conn.bytes_received)}</p>
                             </div>

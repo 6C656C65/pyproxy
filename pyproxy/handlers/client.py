@@ -98,7 +98,6 @@ class ProxyHandlers:
                 return
 
             first_line = request.decode(errors="ignore").split("\n")[0]
-            print("debug server.py :", threading.get_ident())
             if first_line.startswith("CONNECT"):
                 https_handler = self._create_handler(
                     HttpsHandler,

@@ -202,11 +202,18 @@ class HttpHandler:
             server_port = parsed_url.port or (
                 443 if parsed_url.scheme == "https" else 80
             )
+
+        try:
+            ip_address = socket.gethostbyname(server_host)
+        except socket.gaierror:
+            ip_address = server_host
+
         thread_id = threading.get_ident()
 
         if thread_id in self.active_connections:
             self.active_connections[thread_id].update({
-                "target_ip": server_host,
+                "target_ip": ip_address,
+                "target_domain": server_host,
                 "target_port": server_port,
                 "bytes_sent": 0,
                 "bytes_received": 0,
