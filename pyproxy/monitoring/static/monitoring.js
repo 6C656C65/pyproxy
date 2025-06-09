@@ -1,19 +1,26 @@
-async function fetchMonitoringData() {
+let countdown = 2;
+
+async function fetchAllData() {
     try {
-        const response = await fetch('/monitoring');
-        const data = await response.json();
+        const [monitoringRes, configRes] = await Promise.all([
+            fetch('/monitoring'),
+            fetch('/config')
+        ]);
+
+        const monitoring = await monitoringRes.json();
+        const config = await configRes.json();
 
         document.getElementById('status-section').innerHTML = `
             <h2>Main Process</h2>
-            <p><strong>Name:</strong> ${data.name}</p>
-            <p><strong>PID:</strong> ${data.pid}</p>
-            <p><strong>Status:</strong> <span class="badge ${data.status}">${data.status}</span></p>
-            <p><strong>Start Time:</strong> ${data.start_time}</p>
+            <p><strong>Name:</strong> ${monitoring.name}</p>
+            <p><strong>PID:</strong> ${monitoring.pid}</p>
+            <p><strong>Status:</strong> <span class="badge ${monitoring.status}">${monitoring.status}</span></p>
+            <p><strong>Start Time:</strong> ${monitoring.start_time}</p>
         `;
 
         document.getElementById('subprocesses-section').innerHTML = `
             <h2>Subprocesses</h2>
-            ${Object.values(data.subprocesses).map(proc => `
+            ${Object.values(monitoring.subprocesses).map(proc => `
                 <div class="subprocess">
                     <h3>${proc.name}</h3>
                     <p><strong>PID:</strong> ${proc.pid}</p>
@@ -25,9 +32,9 @@ async function fetchMonitoringData() {
 
         document.getElementById('connections-section').innerHTML = `
             <h2>Active Connections</h2>
-            ${data.active_connections.length === 0
+            ${monitoring.active_connections.length === 0
                 ? '<p>No active connections.</p>'
-                : data.active_connections.map(conn => `
+                : monitoring.active_connections.map(conn => `
                     <div class="connection">
                         <p><strong>Client:</strong> ${conn.client_ip}:${conn.client_port}</p>
                         <p><strong>Target:</strong> ${conn.target_domain} (${conn.target_ip}:${conn.target_port})</p>
@@ -36,15 +43,6 @@ async function fetchMonitoringData() {
                     </div>
                 `).join('')}
         `;
-    } catch (err) {
-        console.error('Error loading data:', err);
-    }
-}
-
-async function fetchConfigData() {
-    try {
-        const response = await fetch('/config');
-        const config = await response.json();
 
         document.getElementById('config-section').innerHTML = `
             <h2>Configuration ${config.debug ? '<span class="badge stopped small">DEBUG</span>' : ''}</h2>
@@ -64,18 +62,35 @@ async function fetchConfigData() {
             <p><strong>Inspect certs folder:</strong> ${config.ssl_config.inspect_certs_folder ? `<span class="path">${config.ssl_config.inspect_certs_folder}</span>` : '<span class="checkmark false">✗</span>'}</p>
             <p><strong>Cancel inspect:</strong> ${config.ssl_config.cancel_inspect ? `<span class="path">${config.ssl_config.cancel_inspect}</span>` : '<span class="checkmark false">✗</span>'}</p>
         `;
+
     } catch (err) {
-        console.error('Error loading config data:', err);
+        console.error('Error loading data:', err);
     }
+    countdown = 2;
 }
 
 function formatBytes(bytes) {
     if (bytes === 0) return '0 B';
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    const value = bytes / Math.pow(1024, i);
-    return value.toFixed(2) + ' ' + sizes[i];
+    return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + sizes[i];
 }
+
+function updateCountdown() {
+    document.getElementById('refresh-timer').textContent = formatCountdown(countdown);
+}
+
+function formatCountdown(seconds) {
+    const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+    const s = String(seconds % 60).padStart(2, '0');
+    return `${m}:${s}`;
+}
+
+setInterval(() => {
+    countdown--;
+    if (countdown <= 0) fetchAllData();
+    updateCountdown();
+}, 1000);
 
 const tabs = document.querySelectorAll('.tab');
 const contents = document.querySelectorAll('.tab-content');
@@ -118,15 +133,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const savedTabId = localStorage.getItem('activeTabId');
     if (savedTabId) {
         const savedTab = document.getElementById(savedTabId);
-        if (savedTab) {
-            activateTab(savedTab);
-            return;
-        }
+        if (savedTab) activateTab(savedTab);
     }
     activateTab(tabs[0]);
-});
 
-fetchMonitoringData();
-fetchConfigData();
-setInterval(fetchMonitoringData, 5000);
-setInterval(fetchConfigData, 5000);
+    fetchAllData();
+    updateCountdown();
+});

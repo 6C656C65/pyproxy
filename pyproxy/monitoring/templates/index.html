@@ -5,6 +5,7 @@
     <title>PyProxy Monitoring</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
     <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png" />
+    <script src="{{ url_for('static', filename='monitoring.js') }}" defer></script>
 </head>
 <body>
     <div class="container">
@@ -12,6 +13,7 @@
             <img src="{{ url_for('static', filename='favicon.png') }}" alt="icon" class="favicon" />
             PyProxy Monitoring
         </h1>
+        <p><strong>Next refresh in:</strong> <span id="refresh-timer">--:--</span></p>
 
         <!-- Tabs -->
         <div class="tabs" role="tablist" aria-label="Monitoring Sections">
@@ -34,7 +36,5 @@
             <div id="connections-section" class="section"></div>
         </div>
     </div>
-
-    <script src="{{ url_for('static', filename='monitoring.js') }}"></script>
 </body>
 </html>
