@@ -415,7 +415,6 @@ class HttpsHandler:
                             data
                         )
         except (socket.error, OSError):
-            self.logger_config.console_logger("error")
             client_socket.close()
             server_socket.close()
             self.active_connections.pop(threading.get_ident(), None)

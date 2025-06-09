@@ -141,3 +141,32 @@ h1 {
 .tab-content.active {
     display: block;
 }
+
+.connection-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.connection-table th,
+.connection-table td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: left;
+}
+
+.connection-table th {
+    background-color: #f2f2f2;
+}
+
+#connections-section {
+    max-width: 100%;
+}
+
+input#connection-search, .connection-table {
+  box-sizing: border-box;
+}
+
+.highlight {
+    background-color: yellow;
+}
