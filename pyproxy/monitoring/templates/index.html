@@ -1,114 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Proxy Monitoring</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
+    <meta charset="UTF-8" />
+    <title>PyProxy Monitoring</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png" />
+    <script src="{{ url_for('static', filename='monitoring.js') }}" defer></script>
 </head>
 <body>
     <div class="container">
         <h1>
-            <img src="{{ url_for('static', filename='favicon.png') }}" alt="icon" class="favicon">
+            <img src="{{ url_for('static', filename='favicon.png') }}" alt="icon" class="favicon" />
             PyProxy Monitoring
         </h1>
+        <p><strong>Next refresh in:</strong> <span id="refresh-timer">--:--</span></p>
 
-        <div class="grid">
-            <div class="left-column">
-                <div id="status-section" class="section">Loading...</div>
-                <div id="subprocesses-section" class="section"></div>
-            </div>
-            <div class="right-column">
-                <div id="connections-section" class="section"></div>
-                <div id="config-section" class="section">Loading config...</div>
-            </div>
+        <!-- Tabs -->
+        <div class="tabs" role="tablist" aria-label="Monitoring Sections">
+            <div class="tab active" role="tab" aria-selected="true" tabindex="0" id="tab-status" aria-controls="content-status">Status</div>
+            <div class="tab" role="tab" aria-selected="false" tabindex="-1" id="tab-settings" aria-controls="content-settings">Settings</div>
+            <div class="tab" role="tab" aria-selected="false" tabindex="-1" id="tab-connections" aria-controls="content-connections">Connections</div>
+        </div>
+
+        <!-- Tab Contents -->
+        <div id="content-status" class="tab-content active" role="tabpanel" aria-labelledby="tab-status">
+            <div id="status-section" class="section">Loading...</div>
+            <div id="subprocesses-section" class="section"></div>
+        </div>
+
+        <div id="content-settings" class="tab-content" role="tabpanel" aria-labelledby="tab-settings">
+            <div id="config-section" class="section">Loading config...</div>
+        </div>
+
+        <div id="content-connections" class="tab-content" role="tabpanel" aria-labelledby="tab-connections">
+            <div id="connections-section" class="section"></div>
         </div>
     </div>
-
-    <script>
-        async function fetchMonitoringData() {
-            try {
-                const response = await fetch('/monitoring');
-                const data = await response.json();
-
-                document.getElementById('status-section').innerHTML = `
-                    <h2>Main Process</h2>
-                    <p><strong>Name:</strong> ${data.name}</p>
-                    <p><strong>PID:</strong> ${data.pid}</p>
-                    <p><strong>Status:</strong> <span class="badge ${data.status}">${data.status}</span></p>
-                    <p><strong>Start Time:</strong> ${data.start_time}</p>
-                `;
-
-                document.getElementById('subprocesses-section').innerHTML = `
-                    <h2>Subprocesses</h2>
-                    ${Object.values(data.subprocesses).map(proc => `
-                        <div class="subprocess">
-                            <h3>${proc.name}</h3>
-                            <p><strong>PID:</strong> ${proc.pid}</p>
-                            <p><strong>Status:</strong> <span class="badge ${proc.status}">${proc.status}</span></p>
-                            <ul>${proc.threads.map(t => `<li>${t.name} (${t.thread_id})</li>`).join('')}</ul>
-                        </div>
-                    `).join('')}
-                `;
-
-                document.getElementById('connections-section').innerHTML = `
-                    <h2>Active Connections</h2>
-                    ${data.active_connections.length === 0
-                        ? '<p>No active connections.</p>'
-                        : data.active_connections.map(conn => `
-                            <div class="connection">
-                                <p><strong>Client:</strong> ${conn.client_ip}:${conn.client_port}</p>
-                                <p><strong>Target:</strong> ${conn.target_ip}:${conn.target_port}</p>
-                                <p><strong>Sent:</strong> ${conn.bytes_sent} bytes</p>
-                                <p><strong>Received:</strong> ${formatBytes(conn.bytes_received)}</p>
-                            </div>
-                        `).join('')}
-                `;
-            } catch (err) {
-                console.error('Error loading data:', err);
-            }
-        }
-
-        async function fetchConfigData() {
-            try {
-                const response = await fetch('/config');
-                const config = await response.json();
-
-                document.getElementById('config-section').innerHTML = `
-                    <h2>Configuration ${config.debug ? '<span class="badge stopped small">DEBUG</span>' : ''}</h2>
-                    <p><strong>Port:</strong> ${config.port ? `<span class="path">${config.port}</span>` : '<span class="checkmark false">✗</span>'}</p>
-                    <p><strong>Flask Port:</strong> ${config.flask_port ? `<span class="path">${config.flask_port}</span>` : '<span class="checkmark false">✗</span>'}</p>
-                    <p><strong>HTML 403:</strong> ${config.html_403 ? `<span class="path">${config.html_403}</span>` : '<span class="checkmark false">✗</span>'}</p>
-                    <h3>Filter Configuration <span class="checkmark ${config.filter_config.no_filter ? 'false' : ''}">${config.filter_config.no_filter ? '✗' : '✓'}</span></h3>
-                    <p><strong>Blocked Sites File:</strong> ${config.filter_config.blocked_sites ? `<span class="path">${config.filter_config.blocked_sites}</span>` : '<span class="checkmark false">✗</span>'}</p>
-                    <p><strong>Blocked URL File:</strong> ${config.filter_config.blocked_url ? `<span class="path">${config.filter_config.blocked_url}</span>` : '<span class="checkmark false">✗</span>'}</p>
-                    <p><strong>Filter Mode:</strong> <span class="path">${config.filter_config.filter_mode}</span></p>
-                    <h3>Logger Configuration</h3>
-                    <p><strong>Access Log:</strong> ${config.logger_config.no_logging_access ? '<span class="checkmark false">✗</span>' : '<span class="checkmark">✓</span>'} ${config.logger_config.access_log ? `<span class="path">${config.logger_config.access_log}</span>` : '<span class="checkmark false">✗</span>'}</p>
-                    <p><strong>Block Log:</strong> ${config.logger_config.no_logging_block ? '<span class="checkmark false">✗</span>' : '<span class="checkmark">✓</span>'} ${config.logger_config.block_log ? `<span class="path">${config.logger_config.block_log}</span>` : '<span class="checkmark false">✗</span>'}</p>
-                    <h3>SSL Inspection <span class="checkmark ${config.ssl_config.ssl_inspect ? '' : 'false'}">${config.ssl_config.ssl_inspect ? '✓' : '✗'}</span></h3>
-                    <p><strong>Inspect CA Cert:</strong> ${config.ssl_config.inspect_ca_cert ? `<span class="path">${config.ssl_config.inspect_ca_cert}</span>` : '<span class="checkmark false">✗</span>'}</p>
-                    <p><strong>Inspect CA Key:</strong> ${config.ssl_config.inspect_ca_key ? `<span class="path">${config.ssl_config.inspect_ca_key}</span>` : '<span class="checkmark false">✗</span>'}</p>
-                    <p><strong>Inspect certs folder:</strong> ${config.ssl_config.inspect_certs_folder ? `<span class="path">${config.ssl_config.inspect_certs_folder}</span>` : '<span class="checkmark false">✗</span>'}</p>
-                    <p><strong>Cancel inspect:</strong> ${config.ssl_config.cancel_inspect ? `<span class="path">${config.ssl_config.cancel_inspect}</span>` : '<span class="checkmark false">✗</span>'}</p>
-                `;
-            } catch (err) {
-                console.error('Error loading config data:', err);
-            }
-        }
-
-        fetchMonitoringData();
-        fetchConfigData();
-        setInterval(fetchMonitoringData, 5000);
-        setInterval(fetchConfigData, 5000);
-
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 B';
-            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(1024));
-            const value = bytes / Math.pow(1024, i);
-            return value.toFixed(2) + ' ' + sizes[i];
-        }
-    </script>
 </body>
 </html>

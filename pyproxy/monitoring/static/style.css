@@ -109,3 +109,35 @@ h1 {
     vertical-align: middle;
     font-style: italic;
 }
+
+.tabs {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 25px;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 2px solid #ddd;
+}
+
+.tab {
+    padding: 10px 20px;
+    border-radius: 6px 6px 0 0;
+    background: #eee;
+    color: #444;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+.tab.active {
+    background: white;
+    border: 2px solid #ddd;
+    border-bottom: none;
+    color: #0066cc;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}

@@ -27,7 +27,7 @@ if not __slim__:
 if not __slim__:
     from pyproxy.modules.custom_header import custom_header_process
 if not __slim__:
-    from pyproxy.monitoring.web import start_flask_server
+    from pyproxy.monitoring import start_flask_server
 
 
 class ProxyServer:
