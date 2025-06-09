@@ -76,3 +76,20 @@ def register_routes(app, auth, proxy_server, ProxyMonitor):
             "flask_port": proxy_server.monitoring_config.flask_port,
         }
         return jsonify(config_data)
+
+    @app.route("/blocked", methods=["GET"])
+    @auth.login_required
+    def blocked():
+        blocked_sites_content = ""
+        blocked_url_content = ""
+
+        with open(proxy_server.filter_config.blocked_sites, "r", encoding="utf-8") as f:
+            blocked_sites_content = [line.strip() for line in f if line.strip()]
+        with open(proxy_server.filter_config.blocked_url, "r", encoding="utf-8") as f:
+            blocked_url_content = [line.strip() for line in f if line.strip()]
+
+        blocked_data = {
+            "blocked_sites": blocked_sites_content,
+            "blocked_url": blocked_url_content,
+        }
+        return jsonify(blocked_data)

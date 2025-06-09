@@ -2,13 +2,15 @@ let countdown = 2;
 
 async function fetchAllData() {
     try {
-        const [monitoringRes, configRes] = await Promise.all([
+        const [monitoringRes, configRes, blockedRes] = await Promise.all([
             fetch('/monitoring'),
-            fetch('/config')
+            fetch('/config'),
+            fetch('/blocked')
         ]);
 
         const monitoring = await monitoringRes.json();
         const config = await configRes.json();
+        const blocked = await blockedRes.json();
 
         document.getElementById('status-section').innerHTML = `
             <h2>Main Process</h2>
@@ -79,6 +81,28 @@ async function fetchAllData() {
         const searchInput = document.getElementById('connection-search');
         if (searchInput) {
             filterConnections(searchInput.value);
+        }
+
+        const blockedSites = blocked.blocked_sites || [];
+        const blockedUrls = blocked.blocked_url || [];
+
+        const blockedSection = document.getElementById('blocked-section');
+        if (blockedSection) {
+            blockedSection.innerHTML = `
+                <h2>Filtering</h2>
+                <div class="blocked-subsection">
+                    <h3>Blocked sites</h3>
+                    ${blockedSites.length === 0
+                        ? '<p>No blocked sites.</p>'
+                        : `<ul>${blockedSites.map(site => `<li>${site}</li>`).join('')}</ul>`}
+                </div>
+                <div class="blocked-subsection">
+                    <h3>Blocked URLs</h3>
+                    ${blockedUrls.length === 0
+                        ? '<p>No URLs blocked.</p>'
+                        : `<ul>${blockedUrls.map(url => `<li>${url}</li>`).join('')}</ul>`}
+                </div>
+            `;
         }
 
     } catch (err) {
