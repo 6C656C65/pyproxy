@@ -61,10 +61,14 @@ def register_routes(app, auth, proxy_server, ProxyMonitor):
             "debug": proxy_server.debug,
             "html_403": proxy_server.html_403,
             "logger_config": (
-                proxy_server.logger_config.to_dict() if proxy_server.logger_config else None
+                proxy_server.logger_config.to_dict()
+                if proxy_server.logger_config
+                else None
             ),
             "filter_config": (
-                proxy_server.filter_config.to_dict() if proxy_server.filter_config else None
+                proxy_server.filter_config.to_dict()
+                if proxy_server.filter_config
+                else None
             ),
             "ssl_config": (
                 proxy_server.ssl_config.to_dict() if proxy_server.ssl_config else None
