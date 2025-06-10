@@ -1,3 +1,13 @@
+## [0.4.5] - 2025-06-09
+### Added
+- Monitoring : refresh timer
+### Change
+- Rework monitoring code
+
+## [0.4.4] - 2025-06-08
+### Change
+- Repository migration
+
 ## [0.4.3] - 2025-06-08
 ### Added
 - Docs: installation from compose
