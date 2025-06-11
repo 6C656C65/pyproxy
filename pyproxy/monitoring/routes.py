@@ -31,7 +31,7 @@ def register_routes(app, auth, proxy_server, ProxyMonitor):
         """
         return render_template("index.html")
 
-    @app.route("/monitoring", methods=["GET"])
+    @app.route("/api/status", methods=["GET"])
     @auth.login_required
     def monitoring():
         """
@@ -44,13 +44,20 @@ def register_routes(app, auth, proxy_server, ProxyMonitor):
         monitor = ProxyMonitor(proxy_server)
         return jsonify(monitor.get_process_info())
 
-    @app.route("/config", methods=["GET"])
+    @app.route("/api/settings", methods=["GET"])
     @auth.login_required
     def config():
         """
-        Returns the current configuration of the ProxyServer, including
-        host, port, debug mode, and optional components like logger, filter,
-        and SSL configuration.
+        Returns the current configuration of the ProxyServer.
+
+        The configuration includes:
+            - Host and port
+            - Debug mode
+            - 403 HTML page usage
+            - Logger configuration (if present)
+            - Filter configuration (if present)
+            - SSL configuration (if present)
+            - Flask monitoring port
 
         Returns:
             Response: JSON object containing configuration data.
@@ -77,9 +84,42 @@ def register_routes(app, auth, proxy_server, ProxyMonitor):
         }
         return jsonify(config_data)
 
-    @app.route("/blocked", methods=["GET", "POST", "DELETE"])
+    @app.route("/api/filtering", methods=["GET", "POST", "DELETE"])
     @auth.login_required
     def blocked():
+        """
+        Manages the blocked sites and URLs list.
+
+        GET:
+            Reads and returns the current blocked domains and URLs from the corresponding files.
+            Returns:
+                Response: JSON object with 'blocked_sites' and 'blocked_url' lists.
+
+        POST:
+            Adds a new domain or URL to the blocked lists based on 'type' and 'value' from JSON input.
+            Request JSON:
+                {
+                    "type": "domain" | "url",
+                    "value": "<value_to_block>"
+                }
+            Returns:
+                201: Successfully added.
+                400: Invalid input.
+                409: Value already blocked.
+
+        DELETE:
+            Removes a domain or URL from the blocked lists based on 'type' and 'value' from JSON input.
+            Request JSON:
+                {
+                    "type": "domain" | "url",
+                    "value": "<value_to_unblock>"
+                }
+            Returns:
+                200: Successfully removed.
+                400: Invalid input.
+                404: Value not found.
+                500: Server error.
+        """
         if request.method == "GET":
             blocked_sites_content = ""
             blocked_url_content = ""

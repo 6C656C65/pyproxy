@@ -3,9 +3,9 @@ let countdown = 2;
 async function fetchAllData() {
     try {
         const [monitoringRes, configRes, blockedRes] = await Promise.all([
-            fetch('/monitoring'),
-            fetch('/config'),
-            fetch('/blocked')
+            fetch('/api/status'),
+            fetch('/api/settings'),
+            fetch('/api/filtering')
         ]);
 
         const monitoring = await monitoringRes.json();
@@ -161,7 +161,7 @@ function formatBytes(bytes) {
 }
 
 function handleUnblock(type, value) {
-  fetch('/blocked', {
+  fetch('/api/filtering', {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -324,7 +324,7 @@ window.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        fetch('/blocked', {
+        fetch('/api/filtering', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
