@@ -234,9 +234,14 @@ window.addEventListener('DOMContentLoaded', () => {
     const savedTabId = localStorage.getItem('activeTabId');
     if (savedTabId) {
         const savedTab = document.getElementById(savedTabId);
-        if (savedTab) activateTab(savedTab);
+        if (savedTab) {
+            activateTab(savedTab);
+        } else {
+            activateTab(tabs[0]);
+        }
+    } else {
+        activateTab(tabs[0]);
     }
-    activateTab(tabs[0]);
 
     const searchInput = document.getElementById('connection-search');
     if (searchInput) {
