@@ -44,6 +44,21 @@
         <div id="content-filtering" class="tab-content" role="tabpanel" aria-labelledby="tab-filtering" hidden>
             <div id="blocked-section">
                 <h2>Filtering</h2>
+                <div id="filtering-form-section" style="margin-bottom: 20px;">
+                <h3>Add a domain or URL to block</h3>
+                <form id="add-block-form">
+                    <label for="block-type">Type :</label>
+                    <select id="block-type" name="block-type">
+                    <option value="domain">Domain</option>
+                    <option value="url">URL</option>
+                    </select>
+                    
+                    <label for="block-value" style="margin-left: 10px;">Value :</label>
+                    <input type="text" id="block-value" name="block-value" required placeholder="e.g.: example.com or http://example.com/page">
+
+                    <button type="submit" style="margin-left: 10px;">Add</button>
+                </form>
+                </div>
                 <input type="text" id="blocked-search" placeholder="Search domain or URLs..." style="width: 100%; padding: 8px; margin-bottom: 10px;" />
                 <div id="blocked-section-container"></div>
             </div>

@@ -77,7 +77,7 @@ def register_routes(app, auth, proxy_server, ProxyMonitor):
         }
         return jsonify(config_data)
 
-    @app.route("/blocked", methods=["GET", "DELETE"])
+    @app.route("/blocked", methods=["GET", "POST", "DELETE"])
     @auth.login_required
     def blocked():
         if request.method == "GET":
@@ -94,6 +94,29 @@ def register_routes(app, auth, proxy_server, ProxyMonitor):
                 "blocked_url": blocked_url_content,
             }
             return jsonify(blocked_data)
+
+        elif request.method == "POST":
+            data = request.get_json()
+            typ = data.get("type")
+            val = data.get("value", "").strip()
+            if not val or typ not in ["domain", "url"]:
+                return jsonify({"error": "Invalid input"}), 400
+
+            filename = (
+                proxy_server.filter_config.blocked_sites
+                if typ == "domain"
+                else proxy_server.filter_config.blocked_url
+            )
+
+            with open(filename, "r+", encoding="utf-8") as f:
+                lines = [line.strip() for line in f if line.strip()]
+                if val in lines:
+                    return jsonify({"message": "Already blocked"}), 409
+                lines.append(val)
+                f.seek(0)
+                f.truncate()
+                f.write("\n".join(lines) + "\n")
+            return jsonify({"message": "Added successfully"}), 201
 
         elif request.method == "DELETE":
             data = request.get_json()

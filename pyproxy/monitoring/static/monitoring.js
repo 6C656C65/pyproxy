@@ -174,6 +174,8 @@ function handleUnblock(type, value) {
   .then(response => {
     if (!response.ok) {
       alert(`Error while deleting : ${value}`);
+    } else {
+      fetchAllData();
     }
   })
   .catch(err => {
@@ -316,6 +318,41 @@ window.addEventListener('DOMContentLoaded', () => {
             filterBlocked(blockedSearchInput.value);
         });
     }
+
+    document.getElementById('add-block-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const type = document.getElementById('block-type').value;
+        const value = document.getElementById('block-value').value.trim();
+
+        if (!value) {
+            alert('Please enter a value to block.');
+            return;
+        }
+
+        fetch('/blocked', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                type: type,
+                value: value
+            }),
+        })
+        .then(response => {
+            if (response.ok) {
+                document.getElementById('block-value').value = '';
+                fetchAllData();
+            } else {
+                alert(`Error adding : ${value}`);
+            }
+        })
+        .catch(err => {
+            console.error('Network error:', err);
+            alert('Network error');
+        });
+    });
 
     fetchAllData();
     updateCountdown();
