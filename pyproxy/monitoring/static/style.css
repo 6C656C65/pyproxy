@@ -142,21 +142,32 @@ h1 {
     display: block;
 }
 
-.connection-table {
+.generic-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
 }
 
-.connection-table th,
-.connection-table td {
+.generic-table th,
+.generic-table td {
     border: 1px solid #ccc;
     padding: 8px;
     text-align: left;
 }
 
-.connection-table th {
+.generic-table th {
     background-color: #f2f2f2;
+}
+
+.filtering-table th:first-child,
+.filtering-table td:first-child {
+  width: 70%;
+}
+
+.filtering-table th:last-child,
+.filtering-table td:last-child {
+  width: 30%;
+  text-align: center;
 }
 
 #connections-section {

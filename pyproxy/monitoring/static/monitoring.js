@@ -36,7 +36,7 @@ async function fetchAllData() {
             ${monitoring.active_connections.length === 0
                 ? '<p>No active connections.</p>'
                 : `
-                <table class="connection-table">
+                <table class="generic-table">
                     <thead>
                         <tr>
                             <th>Client</th>
@@ -89,18 +89,56 @@ async function fetchAllData() {
         const blockedSection = document.getElementById('blocked-section-container');
         if (blockedSection) {
             blockedSection.innerHTML = `
-                <div class="blocked-subsection">
-                    <h3>Blocked sites</h3>
-                    ${blockedSites.length === 0
-                        ? '<p>No blocked sites.</p>'
-                        : `<ul>${blockedSites.map(site => `<li>${site}</li>`).join('')}</ul>`}
-                </div>
-                <div class="blocked-subsection">
-                    <h3>Blocked URLs</h3>
-                    ${blockedUrls.length === 0
-                        ? '<p>No URLs blocked.</p>'
-                        : `<ul>${blockedUrls.map(url => `<li>${url}</li>`).join('')}</ul>`}
-                </div>
+            <div class="blocked-subsection">
+                <h3>Blocked sites</h3>
+                ${blockedSites.length === 0
+                ? '<p>No blocked sites.</p>'
+                : `
+                <table class="generic-table filtering-table">
+                    <thead>
+                    <tr>
+                        <th>Domain</th>
+                        <th>Action</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    ${blockedSites.map(site => `
+                        <tr>
+                        <td>${site}</td>
+                        <td>
+                            <button onclick="handleUnblock('domain', '${site}')">Unblock</button>
+                        </td>
+                        </tr>
+                    `).join('')}
+                    </tbody>
+                </table>
+                `}
+            </div>
+            <div class="blocked-subsection">
+                <h3>Blocked URLs</h3>
+                ${blockedUrls.length === 0
+                ? '<p>No URLs blocked.</p>'
+                : `
+                <table class="generic-table filtering-table">
+                    <thead>
+                    <tr>
+                        <th>URL</th>
+                        <th>Action</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    ${blockedUrls.map(url => `
+                        <tr>
+                        <td>${url}</td>
+                        <td>
+                            <button onclick="handleUnblock('url', '${url}')">Unblock</button>
+                        </td>
+                        </tr>
+                    `).join('')}
+                    </tbody>
+                </table>
+                `}
+            </div>
             `;
         }
 
@@ -120,6 +158,28 @@ function formatBytes(bytes) {
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + sizes[i];
+}
+
+function handleUnblock(type, value) {
+  fetch('/blocked', {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      type: type,
+      value: value
+    }),
+  })
+  .then(response => {
+    if (!response.ok) {
+      alert(`Error while deleting : ${value}`);
+    }
+  })
+  .catch(err => {
+    console.error('Fetching error:', err);
+    alert('Network error');
+  });
 }
 
 function updateCountdown() {
