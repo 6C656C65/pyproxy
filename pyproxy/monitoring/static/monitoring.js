@@ -196,7 +196,7 @@ function formatCountdown(seconds) {
 
 function filterConnections(filter) {
     filter = filter.toLowerCase();
-    const rows = document.querySelectorAll('.connection-table tbody tr');
+    const rows = document.querySelectorAll('#connections-table-container tbody tr');
     rows.forEach(row => {
         const client = row.children[0].textContent.toLowerCase();
         const target = row.children[1].textContent.toLowerCase();
@@ -226,24 +226,18 @@ function filterConnections(filter) {
 function filterBlocked(filter) {
     filter = filter.toLowerCase();
 
-    const blockedSection = document.getElementById('blocked-section-container');
-    if (!blockedSection) return;
-
-    const lists = blockedSection.querySelectorAll('ul');
-
-    lists.forEach(list => {
-        list.querySelectorAll('li').forEach(li => {
-            const text = li.textContent.toLowerCase();
-
-            li.innerHTML = li.textContent;
-
+    document.querySelectorAll('.blocked-subsection table').forEach(table => {
+        table.querySelectorAll('tbody tr').forEach(row => {
+            const text = row.children[0].textContent.toLowerCase();
             const match = text.includes(filter);
-            li.style.display = match ? '' : 'none';
+            row.style.display = match ? '' : 'none';
+
+            row.children[0].innerHTML = row.children[0].textContent;
 
             if (match && filter.length > 0) {
-                const originalText = li.textContent;
+                const originalText = row.children[0].textContent;
                 const regex = new RegExp(`(${filter})`, 'gi');
-                li.innerHTML = originalText.replace(regex, '<span class="highlight">$1</span>');
+                row.children[0].innerHTML = originalText.replace(regex, '<span class="highlight">$1</span>');
             }
         });
     });
