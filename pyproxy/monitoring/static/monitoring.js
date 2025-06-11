@@ -86,10 +86,9 @@ async function fetchAllData() {
         const blockedSites = blocked.blocked_sites || [];
         const blockedUrls = blocked.blocked_url || [];
 
-        const blockedSection = document.getElementById('blocked-section');
+        const blockedSection = document.getElementById('blocked-section-container');
         if (blockedSection) {
             blockedSection.innerHTML = `
-                <h2>Filtering</h2>
                 <div class="blocked-subsection">
                     <h3>Blocked sites</h3>
                     ${blockedSites.length === 0
@@ -103,6 +102,11 @@ async function fetchAllData() {
                         : `<ul>${blockedUrls.map(url => `<li>${url}</li>`).join('')}</ul>`}
                 </div>
             `;
+        }
+
+        const blockedSearchInput = document.getElementById('blocked-search');
+        if (blockedSearchInput) {
+            filterBlocked(blockedSearchInput.value);
         }
 
     } catch (err) {
@@ -154,6 +158,32 @@ function filterConnections(filter) {
                 row.children[1].innerHTML = originalText.replace(regex, '<span class="highlight">$1</span>');
             }
         }
+    });
+}
+
+function filterBlocked(filter) {
+    filter = filter.toLowerCase();
+
+    const blockedSection = document.getElementById('blocked-section-container');
+    if (!blockedSection) return;
+
+    const lists = blockedSection.querySelectorAll('ul');
+
+    lists.forEach(list => {
+        list.querySelectorAll('li').forEach(li => {
+            const text = li.textContent.toLowerCase();
+
+            li.innerHTML = li.textContent;
+
+            const match = text.includes(filter);
+            li.style.display = match ? '' : 'none';
+
+            if (match && filter.length > 0) {
+                const originalText = li.textContent;
+                const regex = new RegExp(`(${filter})`, 'gi');
+                li.innerHTML = originalText.replace(regex, '<span class="highlight">$1</span>');
+            }
+        });
     });
 }
 
@@ -212,6 +242,13 @@ window.addEventListener('DOMContentLoaded', () => {
     if (searchInput) {
         searchInput.addEventListener('input', () => {
             filterConnections(searchInput.value);
+        });
+    }
+
+    const blockedSearchInput = document.getElementById('blocked-search');
+    if (blockedSearchInput) {
+        blockedSearchInput.addEventListener('input', () => {
+            filterBlocked(blockedSearchInput.value);
         });
     }
 
