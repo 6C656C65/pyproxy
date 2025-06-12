@@ -96,7 +96,8 @@ def register_routes(app, auth, proxy_server, ProxyMonitor):
                 Response: JSON object with 'blocked_sites' and 'blocked_url' lists.
 
         POST:
-            Adds a new domain or URL to the blocked lists based on 'type' and 'value' from JSON input.
+            Adds a new domain or URL to the blocked lists based on
+                        'type' and 'value' from JSON input.
             Request JSON:
                 {
                     "type": "domain" | "url",
@@ -108,7 +109,8 @@ def register_routes(app, auth, proxy_server, ProxyMonitor):
                 409: Value already blocked.
 
         DELETE:
-            Removes a domain or URL from the blocked lists based on 'type' and 'value' from JSON input.
+            Removes a domain or URL from the blocked lists based on
+                        'type' and 'value' from JSON input.
             Request JSON:
                 {
                     "type": "domain" | "url",
@@ -124,9 +126,13 @@ def register_routes(app, auth, proxy_server, ProxyMonitor):
             blocked_sites_content = ""
             blocked_url_content = ""
 
-            with open(proxy_server.filter_config.blocked_sites, "r", encoding="utf-8") as f:
+            with open(
+                proxy_server.filter_config.blocked_sites, "r", encoding="utf-8"
+            ) as f:
                 blocked_sites_content = [line.strip() for line in f if line.strip()]
-            with open(proxy_server.filter_config.blocked_url, "r", encoding="utf-8") as f:
+            with open(
+                proxy_server.filter_config.blocked_url, "r", encoding="utf-8"
+            ) as f:
                 blocked_url_content = [line.strip() for line in f if line.strip()]
 
             blocked_data = {
@@ -161,7 +167,10 @@ def register_routes(app, auth, proxy_server, ProxyMonitor):
         elif request.method == "DELETE":
             data = request.get_json()
             if not data or "type" not in data or "value" not in data:
-                return jsonify({"error": "Missing 'type' or 'value' in request body"}), 400
+                return (
+                    jsonify({"error": "Missing 'type' or 'value' in request body"}),
+                    400,
+                )
 
             block_type = data["type"]
             value = data["value"].strip()
@@ -171,14 +180,20 @@ def register_routes(app, auth, proxy_server, ProxyMonitor):
             elif block_type == "url":
                 filepath = proxy_server.filter_config.blocked_url
             else:
-                return jsonify({"error": "Invalid type, must be 'domain' or 'url'"}), 400
+                return (
+                    jsonify({"error": "Invalid type, must be 'domain' or 'url'"}),
+                    400,
+                )
 
             try:
                 with open(filepath, "r", encoding="utf-8") as f:
                     lines = [line.strip() for line in f if line.strip()]
 
                 if value not in lines:
-                    return jsonify({"error": f"{value} not found in {block_type} list"}), 404
+                    return (
+                        jsonify({"error": f"{value} not found in {block_type} list"}),
+                        404,
+                    )
 
                 lines = [line for line in lines if line != value]
 
@@ -186,6 +201,11 @@ def register_routes(app, auth, proxy_server, ProxyMonitor):
                     for line in lines:
                         f.write(line + "\n")
 
-                return jsonify({"message": f"{block_type} '{value}' removed successfully"}), 200
+                return (
+                    jsonify(
+                        {"message": f"{block_type} '{value}' removed successfully"}
+                    ),
+                    200,
+                )
             except Exception as e:
                 return jsonify({"error": f"Server error: {str(e)}"}), 500
