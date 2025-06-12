@@ -2,13 +2,15 @@ let countdown = 2;
 
 async function fetchAllData() {
     try {
-        const [monitoringRes, configRes] = await Promise.all([
-            fetch('/monitoring'),
-            fetch('/config')
+        const [monitoringRes, configRes, blockedRes] = await Promise.all([
+            fetch('/api/status'),
+            fetch('/api/settings'),
+            fetch('/api/filtering')
         ]);
 
         const monitoring = await monitoringRes.json();
         const config = await configRes.json();
+        const blocked = await blockedRes.json();
 
         document.getElementById('status-section').innerHTML = `
             <h2>Main Process</h2>
@@ -30,18 +32,31 @@ async function fetchAllData() {
             `).join('')}
         `;
 
-        document.getElementById('connections-section').innerHTML = `
-            <h2>Active Connections</h2>
+        document.getElementById('connections-table-container').innerHTML = `
             ${monitoring.active_connections.length === 0
                 ? '<p>No active connections.</p>'
-                : monitoring.active_connections.map(conn => `
-                    <div class="connection">
-                        <p><strong>Client:</strong> ${conn.client_ip}:${conn.client_port}</p>
-                        <p><strong>Target:</strong> ${conn.target_domain} (${conn.target_ip}:${conn.target_port})</p>
-                        <p><strong>Sent:</strong> ${conn.bytes_sent} bytes</p>
-                        <p><strong>Received:</strong> ${formatBytes(conn.bytes_received)}</p>
-                    </div>
-                `).join('')}
+                : `
+                <table class="generic-table">
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Target</th>
+                            <th>Sent</th>
+                            <th>Received</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${monitoring.active_connections.map(conn => `
+                            <tr>
+                                <td>${conn.client_ip}:${conn.client_port}</td>
+                                <td>${conn.target_domain} (${conn.target_ip}:${conn.target_port})</td>
+                                <td>${conn.bytes_sent} bytes</td>
+                                <td>${formatBytes(conn.bytes_received)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                `}
         `;
 
         document.getElementById('config-section').innerHTML = `
@@ -63,6 +78,75 @@ async function fetchAllData() {
             <p><strong>Cancel inspect:</strong> ${config.ssl_config.cancel_inspect ? `<span class="path">${config.ssl_config.cancel_inspect}</span>` : '<span class="checkmark false">✗</span>'}</p>
         `;
 
+        const searchInput = document.getElementById('connection-search');
+        if (searchInput) {
+            filterConnections(searchInput.value);
+        }
+
+        const blockedSites = blocked.blocked_sites || [];
+        const blockedUrls = blocked.blocked_url || [];
+
+        const blockedSection = document.getElementById('blocked-section-container');
+        if (blockedSection) {
+            blockedSection.innerHTML = `
+            <div class="blocked-subsection">
+                <h3>Blocked sites</h3>
+                ${blockedSites.length === 0
+                ? '<p>No blocked sites.</p>'
+                : `
+                <table class="generic-table filtering-table">
+                    <thead>
+                    <tr>
+                        <th>Domain</th>
+                        <th>Action</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    ${blockedSites.map(site => `
+                        <tr>
+                        <td>${site}</td>
+                        <td>
+                            <button onclick="handleUnblock('domain', '${site}')">Unblock</button>
+                        </td>
+                        </tr>
+                    `).join('')}
+                    </tbody>
+                </table>
+                `}
+            </div>
+            <div class="blocked-subsection">
+                <h3>Blocked URLs</h3>
+                ${blockedUrls.length === 0
+                ? '<p>No URLs blocked.</p>'
+                : `
+                <table class="generic-table filtering-table">
+                    <thead>
+                    <tr>
+                        <th>URL</th>
+                        <th>Action</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    ${blockedUrls.map(url => `
+                        <tr>
+                        <td>${url}</td>
+                        <td>
+                            <button onclick="handleUnblock('url', '${url}')">Unblock</button>
+                        </td>
+                        </tr>
+                    `).join('')}
+                    </tbody>
+                </table>
+                `}
+            </div>
+            `;
+        }
+
+        const blockedSearchInput = document.getElementById('blocked-search');
+        if (blockedSearchInput) {
+            filterBlocked(blockedSearchInput.value);
+        }
+
     } catch (err) {
         console.error('Error loading data:', err);
     }
@@ -76,6 +160,30 @@ function formatBytes(bytes) {
     return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + sizes[i];
 }
 
+function handleUnblock(type, value) {
+  fetch('/api/filtering', {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      type: type,
+      value: value
+    }),
+  })
+  .then(response => {
+    if (!response.ok) {
+      alert(`Error while deleting : ${value}`);
+    } else {
+      fetchAllData();
+    }
+  })
+  .catch(err => {
+    console.error('Fetching error:', err);
+    alert('Network error');
+  });
+}
+
 function updateCountdown() {
     document.getElementById('refresh-timer').textContent = formatCountdown(countdown);
 }
@@ -84,6 +192,55 @@ function formatCountdown(seconds) {
     const m = String(Math.floor(seconds / 60)).padStart(2, '0');
     const s = String(seconds % 60).padStart(2, '0');
     return `${m}:${s}`;
+}
+
+function filterConnections(filter) {
+    filter = filter.toLowerCase();
+    const rows = document.querySelectorAll('#connections-table-container tbody tr');
+    rows.forEach(row => {
+        const client = row.children[0].textContent.toLowerCase();
+        const target = row.children[1].textContent.toLowerCase();
+
+        row.querySelectorAll('td').forEach(td => {
+            td.innerHTML = td.textContent;
+        });
+
+        const match = client.includes(filter) || target.includes(filter);
+        row.style.display = match ? '' : 'none';
+
+        if (match && filter.length > 0) {
+            if (client.includes(filter)) {
+                const originalText = row.children[0].textContent;
+                const regex = new RegExp(`(${filter})`, 'gi');
+                row.children[0].innerHTML = originalText.replace(regex, '<span class="highlight">$1</span>');
+            }
+            if (target.includes(filter)) {
+                const originalText = row.children[1].textContent;
+                const regex = new RegExp(`(${filter})`, 'gi');
+                row.children[1].innerHTML = originalText.replace(regex, '<span class="highlight">$1</span>');
+            }
+        }
+    });
+}
+
+function filterBlocked(filter) {
+    filter = filter.toLowerCase();
+
+    document.querySelectorAll('.blocked-subsection table').forEach(table => {
+        table.querySelectorAll('tbody tr').forEach(row => {
+            const text = row.children[0].textContent.toLowerCase();
+            const match = text.includes(filter);
+            row.style.display = match ? '' : 'none';
+
+            row.children[0].innerHTML = row.children[0].textContent;
+
+            if (match && filter.length > 0) {
+                const originalText = row.children[0].textContent;
+                const regex = new RegExp(`(${filter})`, 'gi');
+                row.children[0].innerHTML = originalText.replace(regex, '<span class="highlight">$1</span>');
+            }
+        });
+    });
 }
 
 setInterval(() => {
@@ -133,9 +290,63 @@ window.addEventListener('DOMContentLoaded', () => {
     const savedTabId = localStorage.getItem('activeTabId');
     if (savedTabId) {
         const savedTab = document.getElementById(savedTabId);
-        if (savedTab) activateTab(savedTab);
+        if (savedTab) {
+            activateTab(savedTab);
+        } else {
+            activateTab(tabs[0]);
+        }
+    } else {
+        activateTab(tabs[0]);
     }
-    activateTab(tabs[0]);
+
+    const searchInput = document.getElementById('connection-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            filterConnections(searchInput.value);
+        });
+    }
+
+    const blockedSearchInput = document.getElementById('blocked-search');
+    if (blockedSearchInput) {
+        blockedSearchInput.addEventListener('input', () => {
+            filterBlocked(blockedSearchInput.value);
+        });
+    }
+
+    document.getElementById('add-block-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const type = document.getElementById('block-type').value;
+        const value = document.getElementById('block-value').value.trim();
+
+        if (!value) {
+            alert('Please enter a value to block.');
+            return;
+        }
+
+        fetch('/api/filtering', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                type: type,
+                value: value
+            }),
+        })
+        .then(response => {
+            if (response.ok) {
+                document.getElementById('block-value').value = '';
+                fetchAllData();
+            } else {
+                alert(`Error adding : ${value}`);
+            }
+        })
+        .catch(err => {
+            console.error('Network error:', err);
+            alert('Network error');
+        });
+    });
 
     fetchAllData();
     updateCountdown();
