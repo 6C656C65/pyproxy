@@ -1,3 +1,11 @@
+## [0.4.6] - 2025-06-12
+### Added
+- Monitoring : Actions connections table
+- Monitoring : Add & Delete blocked domains/URLs
+- Monitoring : Searchbar (filerting & Actives connections)
+### Change
+- Monitoring : change routes
+
 ## [0.4.5] - 2025-06-09
 ### Added
 - Monitoring : refresh timer
